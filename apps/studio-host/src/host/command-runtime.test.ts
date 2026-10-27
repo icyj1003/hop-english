@@ -61,7 +61,7 @@ describe('createCommandRuntime', () => {
     expect(inputHandler.setEditMode).toHaveBeenCalledWith('form');
     expect(documentStub.documentElement.dataset.editMode).toBe('form');
     expect(formButton.classList.toggle).toHaveBeenCalledWith('active', true);
-    expect(deps.setStatusMessage).toHaveBeenCalledWith('양식 모드');
+    expect(deps.setStatusMessage).toHaveBeenCalledWith('Form mode');
     expect(deps.eventBus.emit).toHaveBeenCalledWith('edit-mode-changed', 'form');
     expect(runtime.services.getContext()).toMatchObject({
       editMode: 'form',
@@ -74,9 +74,9 @@ describe('createCommandRuntime', () => {
     installDocument();
     const deps = dependencies(inputHandlerStub());
     const runtime = createCommandRuntime(deps as never);
-    deps.wasm.fileName = '다른 이름.hwpx';
+    deps.wasm.fileName = 'Other Name.hwpx';
     runtime.services.refreshDocumentStatus();
-    expect(deps.setStatusMessage).toHaveBeenCalledWith('다른 이름.hwpx — 2페이지');
+    expect(deps.setStatusMessage).toHaveBeenCalledWith('Other Name.hwpx — 2 pages');
   });
 });
 
@@ -110,7 +110,7 @@ function inputHandlerStub(overrides: Record<string, unknown> = {}) {
 function dependencies(inputHandler: ReturnType<typeof inputHandlerStub>) {
   return {
     wasm: {
-      fileName: '문서.hwp',
+      fileName: 'Document.hwp',
       pageCount: 2,
       hasTableTransposeClipboard: vi.fn(() => true),
       getShowControlCodes: vi.fn(() => false),

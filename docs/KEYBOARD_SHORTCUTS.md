@@ -102,7 +102,7 @@ that use **Alt**, macOS users should use **Option (⌥)**.
 
 ## Notes
 
-Some shortcuts are remapped from the original Hancom 한글 defaults to avoid
+Some shortcuts are remapped from the original Hancom Hangul defaults to avoid
 browser/webview conflicts:
 
 - **Align Right**: Ctrl+Shift+R (browser hard-refresh) → Alt+Shift+H

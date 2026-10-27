@@ -89,8 +89,8 @@ describe('file command desktop overrides', () => {
 
     await command('file:open').execute(services({ wasm, eventBus }) as never);
 
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', '파일 열기 실패: open failed');
-    expect(globalThis.alert).toHaveBeenCalledWith('파일 열기에 실패했습니다:\nopen failed');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'Open File failed: open failed');
+    expect(globalThis.alert).toHaveBeenCalledWith('Open File failed:\nopen failed');
   });
 
   it('emits saved events and status when desktop save succeeds', async () => {
@@ -109,9 +109,9 @@ describe('file command desktop overrides', () => {
 
     await command('file:save').execute(services({ wasm, eventBus }) as never);
 
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', '저장 중...');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'Saving...');
     expect(eventBus.emit).toHaveBeenCalledWith('desktop-document-saved', result);
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', '저장 완료');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'Saved');
   });
 
   it('reports desktop save failures through status and alert', async () => {
@@ -122,8 +122,8 @@ describe('file command desktop overrides', () => {
 
     await command('file:save').execute(services({ wasm, eventBus }) as never);
 
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', '저장 실패: disk full');
-    expect(globalThis.alert).toHaveBeenCalledWith('저장에 실패했습니다:\ndisk full');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'Save failed: disk full');
+    expect(globalThis.alert).toHaveBeenCalledWith('Save failed:\ndisk full');
   });
 
   it('routes save-as through the dedicated desktop operation', async () => {
@@ -145,7 +145,7 @@ describe('file command desktop overrides', () => {
     expect(saveDocumentFromCommand).not.toHaveBeenCalled();
     expect(saveDocumentAsFromCommand).toHaveBeenCalledOnce();
     expect(eventBus.emit).toHaveBeenCalledWith('desktop-document-saved', result);
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', '저장 완료');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'Saved');
   });
 
   it('uses desktop print integration when available', async () => {
@@ -165,7 +165,7 @@ describe('file command desktop overrides', () => {
   it('keeps PDF export desktop-only', async () => {
     await command('file:export-pdf').execute(services({ wasm: {} }) as never);
 
-    expect(globalThis.alert).toHaveBeenCalledWith('PDF 내보내기는 HOP 데스크톱 앱에서 지원합니다.');
+    expect(globalThis.alert).toHaveBeenCalledWith('PDF export is supported in the HOP desktop app.');
   });
 
   it('reports desktop PDF export failures', async () => {
@@ -176,8 +176,8 @@ describe('file command desktop overrides', () => {
 
     await command('file:export-pdf').execute(services({ wasm, eventBus }) as never);
 
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'PDF 내보내기 실패: render failed');
-    expect(globalThis.alert).toHaveBeenCalledWith('PDF 내보내기에 실패했습니다:\nrender failed');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'Export PDF failed: render failed');
+    expect(globalThis.alert).toHaveBeenCalledWith('Export PDF failed:\nrender failed');
   });
 
   it('does not expose a PDF export shortcut label', () => {
@@ -227,7 +227,7 @@ describe('file command desktop overrides', () => {
 
     expect(openRecentDocumentsDialog).not.toHaveBeenCalled();
     expect(wasm.openDocumentByPath).not.toHaveBeenCalled();
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', '최근 문서가 없습니다');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'No recent documents');
   });
 
   it('clears the native recent-document store on desktop', async () => {
@@ -241,7 +241,7 @@ describe('file command desktop overrides', () => {
     await command('file:clear-recent').execute(services({ wasm, eventBus }) as never);
 
     expect(wasm.clearRecentDocuments).toHaveBeenCalledOnce();
-    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', '최근 문서를 지웠습니다');
+    expect(eventBus.emit).toHaveBeenCalledWith('desktop-status', 'Recent documents cleared');
   });
 });
 

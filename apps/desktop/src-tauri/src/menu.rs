@@ -133,7 +133,7 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
         let id = event.id().0.as_str();
         if id == "app:quit" {
             if let Err(error) = crate::app_quit::request_app_quit(app) {
-                eprintln!("[menu] 앱 종료 요청 실패: {}", error);
+                eprintln!("[menu] App quit request failed: {}", error);
             }
             return;
         }
@@ -141,7 +141,7 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
             let app = app.clone();
             tauri::async_runtime::spawn(async move {
                 if let Err(error) = crate::windows::create_editor_window(&app) {
-                    eprintln!("[menu] 새 창 생성 실패: {}", error);
+                    eprintln!("[menu] Failed to create new window: {}", error);
                 }
             });
             return;

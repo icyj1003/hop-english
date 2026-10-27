@@ -92,7 +92,7 @@ export function createCommandRuntime(dependencies: CommandRuntimeDependencies): 
     document.querySelectorAll('[data-cmd="view:form-mode"]').forEach((element) => {
       element.classList.toggle('active', mode === 'form');
     });
-    setStatusMessage(mode === 'form' ? '양식 모드' : '기본 편집 모드');
+    setStatusMessage(mode === 'form' ? 'Form mode' : 'Normal editing mode');
     eventBus.emit('edit-mode-changed', mode);
     eventBus.emit('command-state-changed');
   };
@@ -106,7 +106,7 @@ export function createCommandRuntime(dependencies: CommandRuntimeDependencies): 
     getViewportManager: () => getCanvasView()?.getViewportManager() ?? null,
     gotoPage: (globalPage) => getCanvasView()?.gotoPage(globalPage) ?? false,
     refreshDocumentStatus: () => {
-      setStatusMessage(`${wasm.fileName} — ${wasm.pageCount}페이지`);
+      setStatusMessage(`${wasm.fileName} — ${wasm.pageCount} page${wasm.pageCount === 1 ? '' : 's'}`);
     },
     setEditMode,
   };

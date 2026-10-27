@@ -36,7 +36,7 @@ fn store_path(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app
         .path()
         .app_data_dir()
-        .map_err(|e| format!("최근 문서 저장 위치를 찾을 수 없습니다: {}", e))?;
+        .map_err(|e| format!("Cannot find recent documents storage location: {}", e))?;
     Ok(dir.join(RECENT_DOCUMENTS_FILE))
 }
 
@@ -84,19 +84,19 @@ fn read_store(store_path: &Path) -> Result<RecentDocumentStore, String> {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
             Ok(RecentDocumentStore::default())
         }
-        Err(error) => Err(format!("최근 문서 목록을 읽을 수 없습니다: {}", error)),
+        Err(error) => Err(format!("Cannot read recent documents list: {}", error)),
     }
 }
 
 fn write_store(store_path: &Path, store: &RecentDocumentStore) -> Result<(), String> {
     if let Some(parent) = store_path.parent() {
         fs::create_dir_all(parent)
-            .map_err(|e| format!("최근 문서 저장 위치를 만들 수 없습니다: {}", e))?;
+            .map_err(|e| format!("Cannot create recent documents storage location: {}", e))?;
     }
     let content = serde_json::to_vec_pretty(store)
-        .map_err(|e| format!("최근 문서 목록을 저장할 수 없습니다: {}", e))?;
+        .map_err(|e| format!("Cannot save recent documents list: {}", e))?;
     fs::write(store_path, content)
-        .map_err(|e| format!("최근 문서 목록을 저장할 수 없습니다: {}", e))
+        .map_err(|e| format!("Cannot save recent documents list: {}", e))
 }
 
 fn is_existing_supported_document(path: &str) -> bool {

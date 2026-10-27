@@ -2,69 +2,97 @@
 
 **HOP is Open HWP**
 
-HOP는 HWP/HWPX 문서를 보고 편집할 수 있는 오픈소스 macOS, Windows, Linux용 데스크탑 앱입니다.
+HOP is an open-source desktop app for macOS, Windows, and Linux that lets you view and edit HWP/HWPX documents.
 
-문서 파싱과 렌더링의 기반은 [rhwp](https://github.com/edwardkim/rhwp)를 사용합니다. HOP는 그 위에 얇게 껍데기를 씌운 앱입니다. rhwp가 제공하는 기능을 바탕으로 파일 열기, 저장, PDF 내보내기, 인쇄, 파일 연결 같은 OS 통합 기능을 제공합니다.
+Document parsing and rendering are built on [rhwp](https://github.com/edwardkim/rhwp). HOP is a thin shell on top of it. Using what rhwp provides, HOP adds OS integration such as opening and saving files, PDF export, printing, and file associations.
 
 ![HOP editor](assets/screenshots/hop-editor.webp)
 
-## 할 수 있는 일
+## What it can do
 
-현재 HOP는 다음 흐름을 지원합니다.
+HOP currently supports:
 
-* HWP/HWPX 문서 열기
-* HWP 문서 저장, 다른 이름으로 저장
-* PDF로 내보내기
-* 인쇄 다이얼로그 열기
-* 파일 드래그 앤 드롭으로 열기
-* `.hwp`, `.hwpx` 파일 연결
-* 여러 창에서 문서 열기
+* Opening HWP/HWPX documents
+* Saving HWP documents, and Save As
+* Exporting to PDF
+* Opening the print dialog
+* Opening files by drag and drop
+* `.hwp` and `.hwpx` file associations
+* Opening documents in multiple windows
 
-## 다운로드
+## Download
 
-최신 릴리즈는 아래 링크에서 받을 수 있습니다.
+Get the latest release from the links below.
 
 * [macOS Apple Silicon (.dmg)](https://github.com/golbin/hop/releases/latest/download/HOP-macos-arm64.dmg)
 * [macOS Intel (.dmg)](https://github.com/golbin/hop/releases/latest/download/HOP-macos-x64.dmg)
 * [Windows x64 (.msi)](https://github.com/golbin/hop/releases/latest/download/HOP-windows-x64.msi)
-* [Linux x64 (.deb, Ubuntu/Debian 계열 권장)](https://github.com/golbin/hop/releases/latest/download/HOP-linux-x64.deb)
-* [Linux x64 (.rpm, Fedora/openSUSE 계열)](https://github.com/golbin/hop/releases/latest/download/HOP-linux-x64.rpm)
+* [Linux x64 (.deb, recommended for Ubuntu/Debian)](https://github.com/golbin/hop/releases/latest/download/HOP-linux-x64.deb)
+* [Linux x64 (.rpm, Fedora/openSUSE)](https://github.com/golbin/hop/releases/latest/download/HOP-linux-x64.rpm)
 * [Linux x64 (AppImage, portable)](https://github.com/golbin/hop/releases/latest/download/HOP-linux-x64.AppImage)
-* [Linux arm64 (.deb, Ubuntu/Debian 계열)](https://github.com/golbin/hop/releases/latest/download/HOP-linux-arm64.deb)
+* [Linux arm64 (.deb, Ubuntu/Debian)](https://github.com/golbin/hop/releases/latest/download/HOP-linux-arm64.deb)
 * [Arch Linux AUR (`hop-openhwp-bin`)](https://aur.archlinux.org/packages/hop-openhwp-bin)
 
-macOS 빌드는 signed/notarized `.dmg`입니다. Homebrew를 통해서 설치할 수도 있습니다. Homebrew 패키지는 [daeho-ro](https://github.com/daeho-ro)님이 올려주셨습니다.
+The macOS build is a signed and notarized `.dmg`. You can also install it with Homebrew. The Homebrew package was contributed by [daeho-ro](https://github.com/daeho-ro).
 
 ```sh
 brew install hop
 ```
 
-전체 릴리즈는 [GitHub Releases](https://github.com/golbin/hop/releases)에서 확인할 수 있습니다.
+All releases are listed on [GitHub Releases](https://github.com/golbin/hop/releases).
 
-## 설치 유의사항
+> The release downloads above are the upstream builds, whose UI is in Korean. To get the English UI from this translated copy, build it yourself (see [Building the Windows installer](#building-the-windows-installer-msi)).
+
+## Installation notes
 
 ### Windows
 
-Windows 빌드는 아직 서명되지 않아 Edge나 Windows SmartScreen에서 "일반적으로 다운로드되지 않습니다" 또는 실행 경고가 뜰 수 있습니다. 다운로드 항목의 `...` 메뉴에서 `유지`를 선택한 뒤 다운로드할 수 있습니다.
+Windows builds are not signed yet, so Edge or Windows SmartScreen may warn that the file "isn't commonly downloaded" or show a warning when you run it. Choose `Keep` from the `...` menu on the download entry to download it.
 
 ### Linux
 
-Linux에서는 한글 IME와 WebKitGTK 런타임 안정성을 위해 배포판에 맞는 네이티브 패키지를 우선 사용해 주세요. arm64 Linux는 Ubuntu/Debian 계열 `.deb`를 먼저 지원합니다. AppImage는 portable 실행이 필요할 때만 권장하며, 일부 Wayland/IME 환경에서는 한영 전환이나 창 표시가 불안정할 수 있습니다.
+On Linux, prefer the native package for your distribution for better Korean IME and WebKitGTK runtime stability. On arm64 Linux, the Ubuntu/Debian `.deb` is supported first. AppImage is recommended only when you need a portable build; on some Wayland/IME setups, Korean/English input switching or window display can be unstable.
 
-Arch, CachyOS, EndeavourOS 계열은 AUR의 `hop-openhwp-bin` 패키지로 설치할 수 있습니다. 이 패키지는 [seunghun-kim](https://github.com/seunghun-kim)님이 올려주셨습니다.
+Arch, CachyOS, and EndeavourOS users can install the `hop-openhwp-bin` package from the AUR. The package was contributed by [seunghun-kim](https://github.com/seunghun-kim).
 
 ```sh
 yay -S hop-openhwp-bin
-# 또는
+# or
 paru -S hop-openhwp-bin
 ```
 
-## 개발하기
+## Building the Windows installer (.msi)
 
-개발 환경 준비, 실행 명령, 프로젝트 구조, `rhwp`와의 관계는 [개발 문서](docs/DEVELOPMENT.md)에 정리해 두었습니다.
+You need, on Windows x64:
+
+* [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with the "Desktop development with C++" workload
+* [Rust](https://rustup.rs/) (the MSVC toolchain, `x86_64-pc-windows-msvc`)
+* [Node.js](https://nodejs.org/) 22 or later, and pnpm 10 (`npm install -g pnpm@10.33.0`)
+* WebView2 (already included in Windows 10/11)
+
+Then, from the repository root:
+
+```sh
+git config --global core.longpaths true
+git submodule update --init --depth 1 third_party/rhwp
+pnpm install --frozen-lockfile
+pnpm tauri build --bundles msi
+```
+
+You can also build the MSI on GitHub without installing anything: push this repository to your own GitHub account, open **Actions → HOP Desktop Release → Run workflow**, tick only **Build Windows x64**, and download the `hop-desktop-windows-x64-bundle` artifact when the run finishes.
+
+The full `rhwp` submodule is several GB because of its sample documents. If that is too slow, a sparse checkout of the pinned commit without `mydocs/`, `pdf/`, `samples/`, and `tools/` is enough to build.
+
+Tauri downloads WiX automatically. The installer is written to `apps/desktop/src-tauri/target/release/bundle/msi/`.
+
+See the [development guide](docs/DEVELOPMENT.md) for more detail.
+
+## Development
+
+Setting up a development environment, run commands, project structure, and the relationship with `rhwp` are described in the [development guide](docs/DEVELOPMENT.md).
 
 ## Credits
 
-HOP는 [rhwp](https://github.com/edwardkim/rhwp)를 기반으로 합니다. HWP 엔진을 공개해 주신 개발자분께 감사드립니다.
+HOP is based on [rhwp](https://github.com/edwardkim/rhwp). Many thanks to the developer who published the HWP engine.
 
 License: MIT

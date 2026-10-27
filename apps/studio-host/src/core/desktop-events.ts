@@ -77,7 +77,7 @@ export async function setupDesktopEvents({
     const payload = event.payload as { paths?: string[] };
     if (hasSupportedDocumentPath(payload.paths ?? [])) {
       setDesktopDragActive(true);
-      setMessage('HWP/HWPX 파일을 놓으면 문서를 엽니다');
+      setMessage('Drop an HWP/HWPX file to open it');
     }
   });
 
@@ -125,7 +125,7 @@ async function handleDesktopCloseRequest(
   event.preventDefault();
   await confirmAndDestroyWindow(desktop, {
     context: 'close request',
-    errorPrefix: '창 닫기 실패',
+    errorPrefix: 'Failed to close window',
     setMessage,
   });
 }
@@ -137,7 +137,7 @@ async function handleDesktopAppQuitRequest(
   if (!desktop.destroyCurrentWindow) return;
   await confirmAndDestroyWindow(desktop, {
     context: 'app quit request',
-    errorPrefix: '앱 종료 실패',
+    errorPrefix: 'Failed to quit app',
     onCancel: () => desktop.cancelAppQuit?.(),
     setMessage,
   });
@@ -194,18 +194,18 @@ async function openLatestDesktopDocument({
 }): Promise<void> {
   const path = findLatestSupportedDocumentPath(paths);
   if (!path) {
-    if (paths.length > 0) setMessage('HWP/HWPX 파일만 열 수 있습니다');
+    if (paths.length > 0) setMessage('Only HWP/HWPX files can be opened');
     return;
   }
   if (!bridge.openDocumentByPath) return;
 
   try {
-    setMessage('파일 로딩 중...');
+    setMessage('Loading file...');
     const loaded = await bridge.openDocumentByPath(path);
     if (loaded) eventBus.emit('desktop-document-loaded', loaded);
   } catch (error) {
-    const errMsg = `파일 로드 실패: ${error}`;
+    const errMsg = `Failed to load file: ${error}`;
     setMessage(errMsg);
-    console.error('[desktop-events] 데스크톱 파일 로드 실패:', error);
+    console.error('[desktop-events] Failed to load desktop file:', error);
   }
 }

@@ -16,7 +16,9 @@ import {
 } from '@/upstream/editor';
 import { Toolbar } from '@/ui/toolbar';
 import { MODAL_DIALOG_CLOSED_EVENT } from '@/ui/dialog';
-import { CommandPalette, ContextMenu, MenuBar, initStyleToolbarOverflow } from '@/upstream/ui';
+import { CommandPalette, ContextMenu, MenuBar, initI18n, initStyleToolbarOverflow } from '@/upstream/ui';
+import { EnglishContextMenu } from './host/context-menu-labels';
+import { installDialogLabelTranslator } from './host/dialog-labels';
 import { loadWebFonts } from '@/core/font-loader';
 import { loadStoredLocalFonts } from '@/core/local-fonts';
 import { isSupportedDocumentPath } from '@/core/document-files';
@@ -34,6 +36,11 @@ const wasm = createBridge();
 const eventBus = new EventBus();
 const documentState = new DocumentDirtyState(eventBus);
 const rendererSession = createRendererSession();
+// Apply the rhwp-studio language pack to static markup that carries data-i18n keys.
+// The locale itself is chosen by public/locale-init.js (English unless the user picked another).
+const uiLocale = initI18n();
+// rhwp-studio still hard-codes some Korean labels that its language pack does not cover.
+if (uiLocale === 'en') installDialogLabelTranslator(document);
 initToolbarLabels();
 documentState.installBeforeUnload(window);
 initThemeSync((effective, mode) => {
@@ -86,12 +93,12 @@ async function initialize(): Promise<void> {
     const tauriRuntime = isTauriRuntime();
     desktopPlatform = await hydrateDesktopPlatform();
     applyDesktopChromePlatformState(document, desktopPlatform);
-    msg.textContent = '웹폰트 로딩 중...';
+    msg.textContent = 'Loading web fonts...';
     await loadStoredLocalFonts().catch(() => null);
     await loadWebFonts([]);  // CSS @font-face 등록 + CRITICAL 폰트만 로드
-    msg.textContent = '문서 엔진 로딩 중...';
+    msg.textContent = 'Loading document engine...';
     await wasm.initialize();
-    msg.textContent = 'HWP 파일을 선택해주세요.';
+    msg.textContent = 'Please choose an HWP file.';
 
     const container = document.getElementById('scroll-container')!;
     canvasView = new CanvasView(container, wasm, eventBus, rendererSession);
@@ -134,7 +141,8 @@ async function initialize(): Promise<void> {
 
     // InputHandler에 커맨드 디스패처 및 컨텍스트 메뉴 주입
     inputHandler.setDispatcher(dispatcher);
-    inputHandler.setContextMenu(new ContextMenu(dispatcher, registry));
+    const ContextMenuClass = uiLocale === 'en' ? EnglishContextMenu : ContextMenu;
+    inputHandler.setContextMenu(new ContextMenuClass(dispatcher, registry));
     inputHandler.setCommandPalette(new CommandPalette(registry, dispatcher));
     inputHandler.setCellSelectionRenderer(
       new CellSelectionRenderer(container, canvasView.getVirtualScroll()),
@@ -220,8 +228,8 @@ async function initialize(): Promise<void> {
       (window as any).__canvasView = canvasView;
     }
   } catch (error) {
-    msg.textContent = `문서 엔진 초기화 실패: ${error}`;
-    console.error('[main] 문서 엔진 초기화 실패:', error);
+    msg.textContent = `Failed to initialize document engine: ${error}`;
+    console.error('[main] Failed to initialize document engine:', error);
   }
 }
 
@@ -298,7 +306,7 @@ function setupFileInput(): void {
     const file = input.files?.[0];
     if (!file) return;
     if (!isSupportedDocumentPath(file.name)) {
-      alert('HWP/HWPX 파일만 지원합니다.');
+      alert('Only HWP/HWPX files are supported.');
       fileInput.value = '';
       return;
     }
@@ -327,7 +335,7 @@ function setupFileInput(): void {
     const file = e.dataTransfer?.files[0];
     if (!file) return;
     if (!isSupportedDocumentPath(file.name)) {
-      alert('HWP/HWPX 파일만 지원합니다.');
+      alert('Only HWP/HWPX files are supported.');
       return;
     }
     await loadFile(file);
@@ -441,20 +449,20 @@ function setupEventListeners(): void {
     const wasDirty = bridge.hasUnsavedChanges?.() ?? false;
     bridge.markDocumentDirty?.();
     if (!wasDirty && bridge.hasUnsavedChanges?.()) {
-      sbMessage().textContent = '수정됨';
+      sbMessage().textContent = 'Modified';
     }
     eventBus.emit('command-state-changed');
   });
 
   eventBus.on('current-page-changed', (page, _total) => {
     const pageIdx = page as number;
-    sbPage().textContent = `${pageIdx + 1} / ${_total} 쪽`;
+    sbPage().textContent = `Page ${pageIdx + 1} / ${_total}`;
 
     // 구역 정보: 현재 페이지의 sectionIndex로 갱신
     if (wasm.pageCount > 0) {
       try {
         const pageInfo = wasm.getPageInfo(pageIdx);
-        sbSection().textContent = `구역: ${pageInfo.sectionIndex + 1} / ${totalSections}`;
+        sbSection().textContent = `Section: ${pageInfo.sectionIndex + 1} / ${totalSections}`;
       } catch { /* 무시 */ }
     }
   });
@@ -465,7 +473,7 @@ function setupEventListeners(): void {
 
   // 삽입/수정 모드 토글
   eventBus.on('insert-mode-changed', (insertMode) => {
-    document.getElementById('sb-mode')!.textContent = (insertMode as boolean) ? '삽입' : '수정';
+    document.getElementById('sb-mode')!.textContent = (insertMode as boolean) ? 'Insert' : 'Overwrite';
   });
 
   // 필드 정보 표시
@@ -475,7 +483,7 @@ function setupEventListeners(): void {
     const fi = info as { fieldId: number; fieldType: string; guideName?: string } | null;
     if (fi) {
       const label = fi.guideName || `#${fi.fieldId}`;
-      sbField.textContent = `[누름틀] ${label}`;
+      sbField.textContent = `[Field] ${label}`;
       sbField.style.display = '';
     } else {
       sbField.textContent = '';
@@ -505,7 +513,7 @@ function setupEventListeners(): void {
       hfGroup.style.display = isActive ? '' : 'none';
     }
     if (hfLabel) {
-      hfLabel.textContent = (mode as string) === 'header' ? '머리말' : (mode as string) === 'footer' ? '꼬리말' : '';
+      hfLabel.textContent = (mode as string) === 'header' ? 'Header' : (mode as string) === 'footer' ? 'Footer' : '';
     }
     defaultTbGroups.forEach((el) => {
       (el as HTMLElement).style.display = isActive ? 'none' : '';
@@ -532,12 +540,12 @@ async function initializeDocument(
     canvasView?.prepareDocumentLoad();
     if (docInfo.fontsUsed?.length) {
       await loadWebFonts(docInfo.fontsUsed, (loaded, total) => {
-        msg.textContent = `폰트 로딩 중... (${loaded}/${total})`;
+        msg.textContent = `Loading fonts... (${loaded}/${total})`;
       });
     }
     msg.textContent = displayName;
     totalSections = docInfo.sectionCount ?? 1;
-    sbSection().textContent = `구역: 1 / ${totalSections}`;
+    sbSection().textContent = `Section: 1 / ${totalSections}`;
     void homeScreen?.refresh(true);
     inputHandler?.deactivate();
     const desktopZoom = isTauriRuntime() ? canvasView?.getViewportManager().getZoom() : undefined;
@@ -551,8 +559,8 @@ async function initializeDocument(
 
     documentState.markClean('document-initialized');
   } catch (error) {
-    console.error('[initDoc] 오류:', error);
-    if (window.innerWidth < 768) alert(`초기화 오류: ${error}`);
+    console.error('[initDoc] Error:', error);
+    if (window.innerWidth < 768) alert(`Initialization error: ${error}`);
   }
 }
 
@@ -570,7 +578,7 @@ async function loadFile(file: File, options: { skipUnsavedGuard?: boolean } = {}
   try {
     if (!await canReplaceCurrentDocument(options.skipUnsavedGuard)) return;
 
-    msg.textContent = '파일 로딩 중...';
+    msg.textContent = 'Loading file...';
     const startTime = performance.now();
     const data = new Uint8Array(await file.arrayBuffer());
     const docInfo = await loadDocumentForOpen(wasm, data, file.name);
@@ -581,12 +589,12 @@ async function loadFile(file: File, options: { skipUnsavedGuard?: boolean } = {}
     const elapsed = performance.now() - startTime;
     await initializeDocument(
       docInfo,
-      `${file.name} — ${docInfo.pageCount}페이지 (${elapsed.toFixed(1)}ms)`,
+      `${file.name} — ${docInfo.pageCount} page${docInfo.pageCount === 1 ? '' : 's'} (${elapsed.toFixed(1)}ms)`,
     );
   } catch (error) {
-    const errMsg = `파일 로드 실패: ${error}`;
+    const errMsg = `Failed to load file: ${error}`;
     msg.textContent = errMsg;
-    console.error('[main] 파일 로드 실패:', error);
+    console.error('[main] Failed to load file:', error);
     // 모바일에서 상태 메시지가 숨겨질 수 있으므로 alert으로도 표시
     if (window.innerWidth < 768) alert(errMsg);
   } finally {
@@ -599,7 +607,7 @@ async function createNewDocument(): Promise<void> {
   documentReplacementPending = true;
   const msg = sbMessage();
   try {
-    msg.textContent = '새 문서 생성 중...';
+    msg.textContent = 'Creating new document...';
     const payload = await createDesktopDocument(wasm);
     if (payload) {
       await initializeDocument(payload.docInfo, payload.message);
@@ -608,10 +616,10 @@ async function createNewDocument(): Promise<void> {
     if (isTauriRuntime() || !await canReplaceCurrentDocument()) return;
 
     const docInfo = wasm.createNewDocument();
-    await initializeDocument(docInfo, `새 문서.hwp — ${docInfo.pageCount}페이지`);
+    await initializeDocument(docInfo, `Untitled.hwp — ${docInfo.pageCount} page${docInfo.pageCount === 1 ? '' : 's'}`);
   } catch (error) {
-    msg.textContent = `새 문서 생성 실패: ${error}`;
-    console.error('[main] 새 문서 생성 실패:', error);
+    msg.textContent = `Failed to create new document: ${error}`;
+    console.error('[main] Failed to create new document:', error);
   } finally {
     documentReplacementPending = false;
   }
@@ -625,7 +633,7 @@ eventBus.on('desktop-document-loaded', (payload) => {
 });
 eventBus.on('desktop-document-saved', () => {
   documentState.markClean('save');
-  sbMessage().textContent = '저장 완료';
+  sbMessage().textContent = 'Saved';
 });
 eventBus.on('desktop-status', (message) => {
   sbMessage().textContent = String(message);

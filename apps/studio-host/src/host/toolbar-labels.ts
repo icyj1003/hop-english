@@ -25,7 +25,7 @@ export function initToolbarLabels(): void {
 
 export const toolbarLabelsCommand: CommandDef = {
   id: COMMAND_ID,
-  label: '도구 상자 라벨 표시',
+  label: 'Show Toolbar Labels',
   execute() {
     const visible = document.documentElement.dataset.toolbarLabels === 'hidden';
     applyToolbarLabels(visible);

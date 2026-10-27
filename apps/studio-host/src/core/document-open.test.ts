@@ -34,7 +34,7 @@ describe('document password opening', () => {
       throw new Error('비밀번호가 일치하지 않거나 암호화 데이터가 손상되었습니다');
     });
     expect(await loadDocumentForOpen(wasm, bytes, 'locked.hwp')).toEqual(info);
-    expect(prompt).toHaveBeenLastCalledWith('locked.hwp', expect.stringContaining('다시 입력'));
+    expect(prompt).toHaveBeenLastCalledWith('locked.hwp', expect.stringContaining('try again'));
     expect(wasm.loadDocumentWithPassword).toHaveBeenLastCalledWith(bytes, 'correct', 'locked.hwp');
   });
 
@@ -50,7 +50,7 @@ describe('document password opening', () => {
     const wasm = encryptedLoader();
     prompt.mockResolvedValue('secret');
     wasm.loadDocumentWithPassword.mockImplementation(() => { throw new Error(error); });
-    await expect(loadDocumentForOpen(wasm, bytes, 'locked.hwp')).rejects.toThrow(/지원하지 않|손상/);
+    await expect(loadDocumentForOpen(wasm, bytes, 'locked.hwp')).rejects.toThrow(/unsupported|not supported|damaged/);
     expect(prompt).toHaveBeenCalledTimes(1);
   });
 });

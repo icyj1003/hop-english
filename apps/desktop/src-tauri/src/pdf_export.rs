@@ -13,7 +13,7 @@ pub fn export_core_to_pdf(
     mut on_progress: impl FnMut(&str, u32, u32, String),
 ) -> Result<u32, String> {
     ensure_pdf_path(target_path)?;
-    on_progress("start", 0, 1, "PDF 내보내기를 시작합니다".to_string());
+    on_progress("start", 0, 1, "Starting PDF export".to_string());
 
     let page_count = core.page_count();
     let pages = resolve_page_range(page_range, page_count)?;
@@ -23,19 +23,19 @@ pub fn export_core_to_pdf(
     for (idx, page) in pages.iter().enumerate() {
         let svg = core
             .render_page_svg_native(*page)
-            .map_err(|e| format!("페이지 {} 렌더링 실패: {}", page + 1, e))?;
+            .map_err(|e| format!("Failed to render page {}: {}", page + 1, e))?;
         svg_pages.push(add_font_fallbacks(&svg));
         on_progress(
             "render",
             idx as u32 + 1,
             total,
-            format!("{} / {} 페이지 렌더링", idx + 1, total),
+            format!("Rendering page {} / {}", idx + 1, total),
         );
     }
 
     let pdf_bytes = searchable_pdf_from_svg_pages(&svg_pages, font_dirs)?;
     atomic_write(target_path, &pdf_bytes)?;
-    on_progress("write", total, total, "PDF 파일을 저장했습니다".to_string());
+    on_progress("write", total, total, "PDF file saved".to_string());
 
     Ok(total)
 }
@@ -47,14 +47,14 @@ pub(crate) fn ensure_pdf_path(path: &Path) -> Result<(), String> {
         .map(|ext| ext.eq_ignore_ascii_case("pdf"))
         != Some(true)
     {
-        return Err("PDF 파일 경로는 .pdf 확장자여야 합니다".to_string());
+        return Err("PDF file path must have a .pdf extension".to_string());
     }
     Ok(())
 }
 
 fn resolve_page_range(page_range: Option<PageRange>, page_count: u32) -> Result<Vec<u32>, String> {
     if page_count == 0 {
-        return Err("내보낼 페이지가 없습니다".to_string());
+        return Err("No pages to export".to_string());
     }
     let Some(range) = page_range else {
         return Ok((0..page_count).collect());
@@ -63,7 +63,7 @@ fn resolve_page_range(page_range: Option<PageRange>, page_count: u32) -> Result<
     let end = range.end.unwrap_or(page_count - 1);
     if start > end || end >= page_count {
         return Err(format!(
-            "페이지 범위가 올바르지 않습니다: {}..{} / 총 {}페이지",
+            "Invalid page range: {}..{} / {} pages total",
             start + 1,
             end + 1,
             page_count
@@ -86,7 +86,7 @@ mod tests {
     fn ensure_pdf_path_rejects_non_pdf_paths() {
         assert_eq!(
             ensure_pdf_path(Path::new("out.hwp")).unwrap_err(),
-            "PDF 파일 경로는 .pdf 확장자여야 합니다"
+            "PDF file path must have a .pdf extension"
         );
         assert!(ensure_pdf_path(Path::new("out")).is_err());
     }
@@ -126,7 +126,7 @@ mod tests {
     fn resolve_page_range_rejects_empty_and_invalid_ranges() {
         assert_eq!(
             resolve_page_range(None, 0).unwrap_err(),
-            "내보낼 페이지가 없습니다"
+            "No pages to export"
         );
         assert!(resolve_page_range(
             Some(PageRange {
@@ -136,7 +136,7 @@ mod tests {
             4,
         )
         .unwrap_err()
-        .contains("페이지 범위가 올바르지 않습니다"));
+        .contains("Invalid page range"));
         assert!(resolve_page_range(
             Some(PageRange {
                 start: Some(0),
@@ -145,7 +145,7 @@ mod tests {
             4,
         )
         .unwrap_err()
-        .contains("총 4페이지"));
+        .contains("4 pages total"));
     }
 
     #[test]

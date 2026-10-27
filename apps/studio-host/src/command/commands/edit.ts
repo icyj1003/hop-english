@@ -151,7 +151,7 @@ function executeClipboardAction(
       }
     })
     .catch((error) => {
-      console.warn(`[edit:${action}] ${action === 'cut' ? '오려 두기' : '복사하기'} 실패:`, error);
+      console.warn(`[edit:${action}] ${action === 'cut' ? 'Cut' : 'Copy'} failed:`, error);
     });
 }
 
@@ -162,7 +162,7 @@ const hopEditCommands: CommandDef[] = [
     const pending = (services.getInputHandler() as ClipboardInputHandler | null)?.performPaste?.();
     if (pending) {
       void Promise.resolve(pending).catch((error) => {
-        console.warn('[edit:paste] 붙이기 실패:', error);
+        console.warn('[edit:paste] Paste failed:', error);
       });
     }
   }),

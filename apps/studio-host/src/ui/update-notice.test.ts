@@ -75,13 +75,13 @@ describe('UpdateNotice', () => {
 
     expect(root.hidden).toBe(false);
     expect(root.dataset.state).toBe('available');
-    expect(title.textContent).toBe('새 버전 0.1.4 사용 가능');
-    expect(body.textContent).toBe('원할 때 업데이트하고 다시 시작할 수 있습니다.');
-    expect(meta.textContent).toBe('업데이트는 명시적으로 시작할 때만 진행됩니다.');
+    expect(title.textContent).toBe('Version 0.1.4 available');
+    expect(body.textContent).toBe('Update and restart whenever you like.');
+    expect(meta.textContent).toBe('Updates run only when you start them.');
     expect(meta.hidden).toBe(false);
     expect(error.hidden).toBe(true);
-    expect(primaryButton.textContent).toBe('업데이트');
-    expect(secondaryButton.textContent).toBe('닫기');
+    expect(primaryButton.textContent).toBe('Update');
+    expect(secondaryButton.textContent).toBe('Close');
 
     primaryButton.click();
 

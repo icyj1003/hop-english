@@ -18,7 +18,7 @@ export function openRecentDocumentsDialog(
 
     const titleBar = document.createElement('div');
     titleBar.className = 'dialog-title';
-    titleBar.textContent = '최근 문서';
+    titleBar.textContent = 'Recent Documents';
 
     const closeBtn = document.createElement('button');
     closeBtn.className = 'dialog-close';
@@ -38,18 +38,18 @@ export function openRecentDocumentsDialog(
 
     const clearBtn = document.createElement('button');
     clearBtn.className = 'dialog-btn recent-documents-clear';
-    clearBtn.textContent = '목록 비우기';
+    clearBtn.textContent = 'Clear List';
 
     const spacer = document.createElement('span');
     spacer.className = 'recent-documents-footer-spacer';
 
     const openBtn = document.createElement('button');
     openBtn.className = 'dialog-btn dialog-btn-primary';
-    openBtn.textContent = '열기';
+    openBtn.textContent = 'Open';
 
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'dialog-btn';
-    cancelBtn.textContent = '취소';
+    cancelBtn.textContent = 'Cancel';
 
     footer.append(clearBtn, spacer, openBtn, cancelBtn);
     dialog.append(titleBar, body, footer);

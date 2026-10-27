@@ -1,85 +1,85 @@
-# rhwp v0.8.7 통합 계획
+# rhwp v0.8.7 Integration Plan
 
-작성일: 2026-10-07. 상태: 구현 및 로컬 자동 검증 완료. 배포 전 OS별 GUI 검증은 남아 있다.
+Written: 2026-10-07. Status: implementation and local automated verification complete. Per-OS GUI verification before release remains.
 
 ## Background
 
-HOP v0.4.4의 upstream 기준은 rhwp v0.8.4
-(`496333b27d21ddb9114ba9ae340bcb895870c9a7`)다. 공식 Releases의 최신 안정 버전은
-2026-10-06 공개된 v0.8.7이며, 원격 태그는
-`1a76570e833917d15817415a53c09ad61ab3203f`를 가리킨다.
-v0.8.6의 변경도 포함하여 v0.8.4에서 직접 갱신한다.
+HOP v0.4.4's upstream baseline is rhwp v0.8.4
+(`496333b27d21ddb9114ba9ae340bcb895870c9a7`). The latest stable version on the official Releases is
+v0.8.7, published 2026-10-06, and the remote tag points to
+`1a76570e833917d15817415a53c09ad61ab3203f`.
+The update goes directly from v0.8.4 and includes the v0.8.6 changes as well.
 
-근거: [v0.8.7 릴리스](https://github.com/edwardkim/rhwp/releases/tag/v0.8.7),
-[v0.8.6 릴리스](https://github.com/edwardkim/rhwp/releases/tag/v0.8.6),
-[대상 Cargo manifest](https://github.com/edwardkim/rhwp/blob/v0.8.7/Cargo.toml),
-[Studio command 계약](https://github.com/edwardkim/rhwp/blob/v0.8.7/rhwp-studio/src/command/types.ts).
-실행 절차는 [업데이트 운영 매뉴얼](RHWP_UPDATE.md)을 따른다.
+Sources: [v0.8.7 release](https://github.com/edwardkim/rhwp/releases/tag/v0.8.7),
+[v0.8.6 release](https://github.com/edwardkim/rhwp/releases/tag/v0.8.6),
+[target Cargo manifest](https://github.com/edwardkim/rhwp/blob/v0.8.7/Cargo.toml),
+[Studio command contract](https://github.com/edwardkim/rhwp/blob/v0.8.7/rhwp-studio/src/command/types.ts).
+The procedure follows the [update runbook](RHWP_UPDATE.md).
 
 ## Problem
 
-태그와 WASM만 교체해서는 native PDF 의존성과 HOP Studio 계약을 맞출 수 없다.
-현재 checkout의 submodule은 초기화되지 않았으므로 로컬 upstream 검증도 아직 실행할 수 없다.
-원격 안정 태그의 파일과 HOP 코드를 대조해 다음을 확인했다.
+Swapping only the tag and WASM cannot align the native PDF dependency and the HOP Studio contract.
+The submodule in the current checkout is not initialized, so local upstream verification cannot run yet either.
+Comparing the files at the remote stable tag with HOP code confirmed the following:
 
-| 확인한 변화 | HOP 영향과 대응 |
+| Change found | Impact on HOP and response |
 | --- | --- |
-| upstream의 `svg2pdf` patch가 Git에서 `vendor/svg2pdf` path로 전환 | updater의 `resolveHopCargoPatches()`는 Git lock source만 허용한다. 현 상태로는 candidate 생성이 중단될 것으로 예상된다. desktop·Quick Look 최상위 manifest 모두 새 patch를 적용해야 한다. |
-| `CommandServices.refreshDocumentStatus()` 필수 추가 | `host/command-runtime.ts`의 services 생성과 테스트 fixture에 실제 상태 갱신 연결이 필요하다. 빈 함수로 타입만 맞추지 않는다. |
-| 추적 counterpart 8개 모두 변경 | `core/font-loader`, `core/local-fonts`, `command/shortcut-map`, `command/commands/edit`, `command/commands/file`, `ui/about-dialog`, `ui/dialog`, `ui/toolbar`를 모두 검토한다. hash 갱신은 검토 완료를 뜻하지 않는다. |
-| host font provider 연결과 측정·출력 개선 | HOP은 upstream `main.ts`를 실행하지 않는다. 새 font provider 연결이 HOP bootstrap에도 필요한지 확인하고 native 글꼴·authoring 정책과 함께 검증한다. |
-| `RendererSession` CanvasKit preflight callback의 nullable 계약 변경 | HOP Canvas2D lifecycle와 관련 타입/import를 확인한다. backend 변경은 이번 범위에 포함하지 않는다. |
-| upstream Rust 내부 crate 분리 및 의존성 변경 | 새 path crate가 두 native graph와 WASM에서 정상 해석되는지 확인한다. `native-skia` 활성 빌드에서는 Skia 변경도 검증한다. |
-| Studio 의존성 요구 변경 | `@noble/hashes`, `canvaskit-wasm` 등 실제 소비 import/API를 확인한다. 필요할 때만 HOP manifest와 pnpm lockfile을 함께 조정한다. |
+| Upstream's `svg2pdf` patch moved from Git to the `vendor/svg2pdf` path | The updater's `resolveHopCargoPatches()` accepts only Git lock sources. As is, candidate creation is expected to stop. Both the desktop and Quick Look top-level manifests must apply the new patch. |
+| `CommandServices.refreshDocumentStatus()` added as required | The services creation in `host/command-runtime.ts` and the test fixtures need a real status-refresh hookup. Do not satisfy the type with an empty function. |
+| All 8 tracked counterparts changed | Review all of `core/font-loader`, `core/local-fonts`, `command/shortcut-map`, `command/commands/edit`, `command/commands/file`, `ui/about-dialog`, `ui/dialog`, `ui/toolbar`. Updating hashes does not mean the review is done. |
+| Host font provider wiring and measurement/output improvements | HOP does not run upstream `main.ts`. Check whether the new font provider wiring is needed in the HOP bootstrap too, and verify it together with the native font and authoring policies. |
+| Nullable contract change for the `RendererSession` CanvasKit preflight callback | Check the HOP Canvas2D lifecycle and related types/imports. Changing the backend is out of scope. |
+| Upstream Rust internal crate split and dependency changes | Confirm the new path crates resolve correctly in both native graphs and the WASM. Also verify the Skia changes in builds with `native-skia` enabled. |
+| Studio dependency requirement changes | Check the actually consumed imports/APIs such as `@noble/hashes` and `canvaskit-wasm`. Adjust the HOP manifest and pnpm lockfile together only when needed. |
 
 ## Goal
 
-- submodule, 생성 WASM/provenance, 기준선, desktop·Quick Look dependency graph를 v0.8.7로 정렬한다.
-- 저장·표 편집·입력 안전성·조판 개선을 HOP의 파일/session/글꼴/인쇄 정책과 함께 소비한다.
-- upstream이 흡수한 workaround는 삭제하고 남는 정책은 얇은 adapter로 유지한다.
-- 자동 검증과 실제 문서 검증 결과를 구분하여 기록한다.
+- Align the submodule, generated WASM/provenance, baseline, and desktop/Quick Look dependency graphs to v0.8.7.
+- Consume the save, table editing, input safety, and layout improvements together with HOP's file/session/font/print policies.
+- Delete workarounds upstream has absorbed and keep the remaining policies as thin adapters.
+- Record automated verification and real-document verification results separately.
 
 ## Non-goals
 
-- upstream source 직접 수정, HOP 버전 변경, 커밋·태그·배포 실행.
-- 영어 UI, HTML/Word 내보내기, agent/CLI, browser autosave 등 신규 제품 기능의 일괄 도입.
-- CanvasKit 전환이나 exact font/compatibility opt-in의 기본 활성화.
+- Directly modifying upstream source, changing the HOP version, or running commits, tags, or releases.
+- Adopting new product features wholesale, such as an English UI, HTML/Word export, agent/CLI, or browser autosave.
+- Switching to CanvasKit or enabling exact font/compatibility opt-ins by default.
 
 ## Constraints
 
-- pnpm과 외부 Node 24를 사용한다. 대상 Rust는 현재와 같은 `1.93.1`, wasm-pack은 `0.14.0`을 유지한다.
-- 파일·저장·PDF·인쇄·창의 side effect는 Rust/native bridge가 소유한다.
-- macOS, Windows, Linux를 보존하며 무관한 변경은 건드리지 않는다.
-- updater가 보호하는 산출물은 실행 전에 clean이어야 한다. updater 호환 수정은 먼저 검증하고
-  파일별로 변경을 보존한다. 광범위한 reset/stash로 정리하지 않는다.
+- Use pnpm and an external Node 24. Keep the target Rust at the current `1.93.1` and wasm-pack at `0.14.0`.
+- Side effects for files, saving, PDF, printing, and windows are owned by the Rust/native bridge.
+- Preserve macOS, Windows, and Linux, and do not touch unrelated changes.
+- Outputs the updater protects must be clean before running. Verify updater compatibility fixes first and
+  keep changes per file. Do not clean up with broad reset/stash.
 
 ## Implementation outline
 
-1. **현재 기준선 준비**: submodule을 기존 gitlink로 초기화하고 frozen pnpm 설치 후
-   `pnpm upstream:verify`를 실행한다. 도구 버전과 기존 실패가 있으면 기록한다.
-2. **updater 선행 수정**: upstream vendor patch 내용과 provenance를 검토한다. 기존 Git patch
-   계약에 path patch 표현을 추가하고, submodule 내부의 검증된 경로만 허용한다. desktop과
-   Quick Look manifest에는 각 manifest 기준 상대 경로를 생성한다. config, 검증기, lock 검사,
-   업데이트 테스트와 운영 문서를 함께 조정한다. 기존 Git pin 지원을 유지한다.
-   vendor path package는 lockfile에 Git source가 없으므로 경로·package 버전·고정 commit과 clean checkout으로
-   계약을 확인한다. 성공과 실패 시 rollback을 focused test로 검증한다.
-3. **candidate 생성**: `pnpm upstream:update -- v0.8.7`을 실행한다. 태그가 위 commit과
-   일치하는지 재확인하고 WASM을 새로 생성한다. 두 Cargo lock, patch, assets, provenance와
-   counterpart baseline의 diff를 검토한다.
-4. **Studio 호환 수정**: 8개 counterpart와 bootstrap/bridge/renderer/command 공개 API를
-   v0.8.4 대비 검토한다. `refreshDocumentStatus`를 HOP의 저장 후 문서명·상태 갱신에 연결한다.
-   글꼴 provider/측정, IME, overwrite 모드, 검색, 표 clipboard·undo 계약을 확인한다.
-   workaround가 흡수됐으면 override·alias·전용 테스트를 같이 제거한다.
-5. **native 호환 수정**: `rhwp-adapter`의 DocumentCore, 문단 분리, 썸네일, PDF API와
-   desktop·Quick Look 호출부를 확인한다. PDF stitching vendor 수정이 두 native graph에서
-   실제 선택되는지 dependency tree로 확인한다.
-6. **검증 및 결과 기록**: 아래 검증을 순서대로 수행하고 중요 실패를 수정한다.
-   변경이 끝나면 필요 시 저장소 지정 리뷰 모델 GPT-6.1 Sol로 경계·저장·rollback을 직접 리뷰한다.
+1. **Prepare the current baseline**: initialize the submodule at the existing gitlink, do a frozen pnpm install, and run
+   `pnpm upstream:verify`. Record tool versions and any existing failures.
+2. **Fix the updater first**: review the upstream vendor patch contents and provenance. Add a path patch form to the existing Git patch
+   contract, allowing only verified paths inside the submodule. Generate, for the desktop and
+   Quick Look manifests, relative paths from each manifest. Adjust the config, verifier, lock checks,
+   update tests, and operations docs together. Keep the existing Git pin support.
+   Vendor path packages have no Git source in the lockfile, so the contract is checked through path, package version, pinned commit, and a clean checkout.
+   Verify rollback on success and failure with focused tests.
+3. **Create the candidate**: run `pnpm upstream:update -- v0.8.7`. Re-confirm that the tag matches the commit above
+   and generate the WASM fresh. Review the diffs of both Cargo locks, the patch, assets, provenance, and the
+   counterpart baseline.
+4. **Studio compatibility fixes**: review the 8 counterparts and the bootstrap/bridge/renderer/command public APIs
+   against v0.8.4. Connect `refreshDocumentStatus` to HOP's post-save document name/status refresh.
+   Check the font provider/measurement, IME, overwrite mode, search, and table clipboard/undo contracts.
+   If a workaround has been absorbed, remove its override, alias, and dedicated tests together.
+5. **Native compatibility fixes**: check the DocumentCore, paragraph split, thumbnail, and PDF APIs in `rhwp-adapter` and
+   the desktop/Quick Look call sites. Confirm with the dependency tree that the PDF stitching vendor fix is
+   actually selected in both native graphs.
+6. **Verify and record results**: perform the verification below in order and fix important failures.
+   When changes are done, if needed, have the repository's designated review model, GPT-6.1 Sol, directly review the boundary, saving, and rollback.
 
 ## Verification plan
 
-먼저 updater/path patch 계약의 focused test와 관련 command/font/bridge 테스트를 실행한다.
-이후 Rust toolchain을 `1.93.1`로 지정하여 다음을 실행한다.
+First run the focused tests for the updater/path patch contract and the related command/font/bridge tests.
+Then, with the Rust toolchain set to `1.93.1`, run:
 
 ```sh
 pnpm upstream:verify
@@ -90,76 +90,76 @@ pnpm --filter hop-desktop tauri build --debug --bundles app
 git diff --check
 ```
 
-실제 문서는 변경 전 v0.8.4 결과와 비교한다. 원본은 보존하고 저장 왕복은 복사본으로 검증한다.
+Compare real documents with the v0.8.4 results from before the change. Preserve originals and verify save round-trips on copies.
 
-| 검증 범위 | 완료 조건 |
+| Verification scope | Done when |
 | --- | --- |
-| HWP/HWPX 열기·편집·저장·재열기 | 내용·구조·표·머리말/꼬리말 보존. 저장 byte 차이만으로 실패 판정하지 않는다. 가능하면 한컴에서도 저장본을 확인한다. |
-| 중첩/rowspan/연속 TAC 표와 페이지 분할 | 누락·겹침·테두리 회귀가 없고 표 뒤 Enter, 선택·삭제·붙여넣기·undo가 정상이다. |
-| 한글 IME·찾기/치환·하이퍼링크 | 조합 입력과 취소, 중첩 셀 검색, 링크 저장·PDF 보존에 회귀가 없다. |
-| 로컬/동봉/누락 글꼴 | native font discovery·적용·fallback 및 HOP authoring 제한을 유지하고 화면·PDF 결과가 일관된다. |
-| PDF·인쇄·Quick Look | 검색/복사 가능한 한글, 링크, 페이지 범위, 다중 페이지 결합과 preview/thumbnail을 확인한다. |
-| HOP 제품 흐름 | drag/drop·최근 문서·다중 창 격리·미저장 guard·외부 변경 충돌·저장 후 제목 갱신이 정상이다. |
-| 입력 실패 | 대표 손상/과도한 입력을 안전하게 거부하고 이후 정상 문서를 열 수 있다. 비공개 문서 내용은 로그에 남기지 않는다. |
+| HWP/HWPX open, edit, save, reopen | Content, structure, tables, and headers/footers are preserved. Do not judge failure only on saved byte differences. If possible, also check the saved copy in Hancom. |
+| Nested/rowspan/consecutive TAC tables and page splitting | No missing, overlapping, or border regressions, and Enter after a table, select, delete, paste, and undo work normally. |
+| Korean IME, find/replace, hyperlinks | No regressions in composition input and cancel, nested cell search, or link saving and PDF preservation. |
+| Local/bundled/missing fonts | Native font discovery, application, fallback, and HOP authoring restrictions are kept, and screen and PDF results are consistent. |
+| PDF, printing, Quick Look | Check searchable/copyable Korean text, links, page ranges, multi-page stitching, and preview/thumbnail. |
+| HOP product flows | Drag/drop, recent documents, multi-window isolation, the unsaved guard, external change conflicts, and title refresh after saving work normally. |
+| Input failures | Representative damaged/excessive input is safely rejected, and a normal document can be opened afterward. Private document content is never logged. |
 
-배포 전 macOS·Windows·Linux 빌드/CI를 모두 확인하고 macOS 외 Windows 또는 Linux 한 환경에서
-핵심 파일·창·인쇄 GUI 흐름을 추가 확인한다. 사용할 workflow는 release 생성 없이 실행한다.
-수행하지 못한 OS 검증은 미완료로 남긴다.
+Before release, check all macOS, Windows, and Linux builds/CI, and additionally check the core file, window, and print GUI flows on
+at least one of Windows or Linux besides macOS. Run the workflow without creating a release.
+OS verification that could not be performed stays marked incomplete.
 
 ## Rollback / recovery
 
-- updater 실패 시 기존 파일과 v0.8.4 commit 자동 복구 후 status와 upstream 계약을 확인한다.
-- candidate 성공 후 제품 회귀가 해결되지 않으면 이번 작업 소유 산출물·호환 수정만 준비 전
-  상태로 복원한다. 수정한 updater는 Git/path 양쪽 계약을 지원하므로 이전 Git 기준선도 검증한다.
-- 자동 복구 실패 시 오류와 현재 변경을 보존한 뒤 파일별 복구한다. history rewrite는 사용하지 않는다.
+- If the updater fails, after the automatic restore of the existing files and the v0.8.4 commit, check the status and the upstream contract.
+- If a product regression is not resolved after a successful candidate, restore only the outputs and compatibility fixes owned by this work
+  to their pre-work state. The modified updater supports both the Git and path contracts, so also verify the previous Git baseline.
+- If automatic recovery fails, preserve the error and the current changes, then recover per file. Do not rewrite history.
 
-완료 기준: 모든 upstream 산출물 정렬, 변경 counterpart 검토, 중요 회귀 해소, 요구 검증 결과 기록,
-submodule 내부 clean.
+Done criteria: all upstream outputs aligned, changed counterparts reviewed, important regressions resolved, required verification results recorded,
+submodule clean inside.
 
 ## Implementation / verification results
 
-### 전체 변경 재검토 및 개선
+### Full change re-review and improvements
 
-고정 commit으로 관리하는 read-only submodule에 vendor 내용 hash를 별도로 두면 같은 소스의
-기준선이 중복되고 파일별 Git subprocess와 순환 재수출까지 유지하게 된다. 목표는 기존
-Git patch 지원과 안전한 업데이트/복구 계약을 유지하면서 검증의 기준을 하나로 만드는 것이다.
-Cargo patch 모듈을 직접 import하고 vendor path/version은 고정 commit 및 clean checkout으로
-보증한다. tracked 수정·untracked 추가·경로 이탈을 focused test와 upstream verify로 확인한다.
-Studio 코드·생성 WASM·Cargo graph·제품 정책은 유지한다.
-검증 실패 시 이번 재검토 변경만 복구하며 upstream tag를 이동하거나 source를 수정하지 않는다.
+Keeping a separate vendor content hash for a read-only submodule managed by a pinned commit duplicates the baseline for the same source
+and also keeps per-file Git subprocesses and circular re-exports. The goal is to unify the verification baseline while keeping the existing
+Git patch support and the safe update/recovery contract.
+The Cargo patch module is imported directly, and the vendor path/version is guaranteed by the pinned commit and a clean checkout.
+Tracked modifications, untracked additions, and path escapes are checked with focused tests and upstream verify.
+Studio code, generated WASM, the Cargo graph, and product policy are kept.
+If verification fails, only this re-review's changes are reverted; the upstream tag is never moved and the source is never modified.
 
-위 단순화를 반영하고 `pnpm run test:upstream` 34개, `pnpm upstream:verify`,
-`git diff --check`를 다시 통과했다. Studio/native 코드는 이번 재검토에서 수정하지 않았으므로
-아래 기존 테스트·빌드 결과를 유지하고 반복 실행하지 않았다. GPT-6.1 Sol이 전체 변경 및
-검증 설계 변경을 직접 검토했으며 중요 문제는 발견하지 못했다.
+With the simplification above applied, `pnpm run test:upstream` (34 tests), `pnpm upstream:verify`, and
+`git diff --check` passed again. Studio/native code was not modified in this re-review, so
+the existing test/build results below stand and were not re-run. GPT-6.1 Sol directly reviewed the full change and
+the verification design change and found no significant problems.
 
-- 명시적 `pnpm upstream:update -- v0.8.7` 실행으로 대상 commit, WASM, provenance,
-  counterpart 기준선, desktop·Quick Look Cargo graph를 갱신했다. upstream 내부는 clean이다.
-- updater와 검증기는 기존 Git pin 및 vendor path를 모두 지원한다. 경로 containment,
-  package 이름·버전, 고정 commit 및 clean checkout을 검증한다.
-  workspace에서 상속한 vendor package 버전도 처리한다.
-- 저장 후 상태 갱신, 새 renderer font API, IME 물리키 단축키, 키보드 toolbar 활성화,
-  modal 종료 후 입력 포커스, style toolbar overflow 계약을 반영했다.
-  HOP의 native 글꼴·authoring 정책과 HTML/Word export 차단은 유지했다.
-- 기존 큰 bootstrap/toolbar 파일은 upstream 계약과 HOP 정책 연결에 필요한 부분만 수정했다.
-  이번 변경만을 위해 파일 구조를 재편하지 않았으며 새 Cargo patch 모듈은 분리했다.
-- Node 24.4.1, pnpm 10.33.0, Rust 1.93.1로 검증했다.
+- An explicit `pnpm upstream:update -- v0.8.7` run updated the target commit, WASM, provenance,
+  counterpart baseline, and the desktop/Quick Look Cargo graphs. The upstream tree is clean.
+- The updater and verifier support both the existing Git pin and the vendor path. They verify path containment,
+  package name and version, the pinned commit, and a clean checkout.
+  Vendor package versions inherited from the workspace are handled too.
+- Applied the contracts for post-save status refresh, the new renderer font API, IME physical-key shortcuts, keyboard toolbar activation,
+  input focus after a modal closes, and style toolbar overflow.
+  HOP's native font and authoring policies and the blocking of HTML/Word export were kept.
+- The existing large bootstrap/toolbar files were modified only where needed to connect upstream contracts and HOP policy.
+  The file structure was not reorganized just for this change, and the new Cargo patch module was split out.
+- Verified with Node 24.4.1, pnpm 10.33.0, and Rust 1.93.1.
 
-| 실제 실행 | 결과 |
+| What was run | Result |
 | --- | --- |
-| `pnpm upstream:verify` | v0.8.7 계약 및 생성 산출물 검증 통과 |
-| `pnpm run test:upstream` | 34개 통과. Git/path 전환, provenance, boundary 포함 |
-| `pnpm run test:studio` | 145개 통과 |
-| `pnpm run test:desktop` | 81개 통과 (lib 60, integration 21) |
-| `pnpm run test:quicklook:macos` | native-skia 활성 6개 통과 |
-| `pnpm run clippy:desktop` | 경고를 오류로 처리하여 통과 |
-| `pnpm run build:studio` | 통과. 기존 chunk 크기 및 dynamic import 경고 있음 |
-| `pnpm --filter hop-desktop tauri build --debug --bundles app` | macOS HOP.app 및 Quick Look 빌드 통과 |
-| Chromium 실행 확인 | v0.8.7 초기화, 새 문서 입력·렌더, 찾기 패널, 글자 모양 modal 닫기·편집 포커스 복귀 확인 |
-| WASM 저장 왕복 | 합성 한글 문서를 HWP/HWPX로 각각 저장·재열기하여 텍스트 보존, 1페이지 및 SVG 렌더 확인 |
-| 초기 직접 리뷰 (GPT-6 Sol) | 근거 있는 중요 문제 없음 |
-| 전체 변경·검증 설계 재검토 (GPT-6.1 Sol) | 근거 있는 중요 문제 없음 |
+| `pnpm upstream:verify` | v0.8.7 contract and generated outputs verified |
+| `pnpm run test:upstream` | 34 passed, including Git/path switching, provenance, boundary |
+| `pnpm run test:studio` | 145 passed |
+| `pnpm run test:desktop` | 81 passed (lib 60, integration 21) |
+| `pnpm run test:quicklook:macos` | 6 passed with native-skia enabled |
+| `pnpm run clippy:desktop` | passed with warnings treated as errors |
+| `pnpm run build:studio` | passed, with existing chunk size and dynamic import warnings |
+| `pnpm --filter hop-desktop tauri build --debug --bundles app` | macOS HOP.app and Quick Look build passed |
+| Chromium run check | confirmed v0.8.7 initialization, new document input and render, the find panel, closing the character shape modal, and edit focus returning |
+| WASM save round-trip | saved and reopened a synthetic Korean document as HWP and HWPX each, confirming text preservation, 1 page, and SVG rendering |
+| Initial direct review (GPT-6 Sol) | no substantiated significant problems |
+| Full change and verification design re-review (GPT-6.1 Sol) | no substantiated significant problems |
 
-실제 복잡한 문서·한컴 교차 확인, 한글 IME 조합, native 파일/인쇄/창 GUI,
-Windows·Linux 빌드/GUI 검증은 수행하지 않았다. 위 합성 문서 왕복을 이들 검증의 대체로 보지 않는다.
-배포 전에 Verification plan의 해당 항목을 실행한다. 커밋·제품 버전 변경·배포는 하지 않았다.
+Cross-checking with real complex documents and Hancom, Korean IME composition, native file/print/window GUI,
+and Windows/Linux build/GUI verification were not performed. The synthetic document round-trip above is not a substitute for those checks.
+Run the corresponding Verification plan items before release. No commit, product version change, or release was made.

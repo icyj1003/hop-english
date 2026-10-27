@@ -73,7 +73,7 @@ export async function writeFileInChunks(path: string, bytes: Uint8Array): Promis
       while (offset < chunkEnd) {
         const written = await file.write(bytes.subarray(offset, chunkEnd));
         if (written <= 0) {
-          throw new Error('staging 파일 쓰기 실패: no bytes written');
+          throw new Error('Failed to write staging file: no bytes written');
         }
         offset += written;
       }
@@ -85,7 +85,7 @@ export async function writeFileInChunks(path: string, bytes: Uint8Array): Promis
   const written = await stat(path);
   if (finiteFileSize(written.size) !== bytes.byteLength) {
     throw new Error(
-      `staging 파일 크기 검증 실패: expected ${bytes.byteLength}, got ${written.size ?? 'unknown'}`,
+      `Staging file size check failed: expected ${bytes.byteLength}, got ${written.size ?? 'unknown'}`,
     );
   }
 }

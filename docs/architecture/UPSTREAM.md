@@ -1,137 +1,137 @@
-# upstream 경계
+# Upstream boundary
 
-HOP는 `edwardkim/rhwp`를 읽기 전용 upstream 의존성으로 사용한다.
+HOP uses `edwardkim/rhwp` as a read-only upstream dependency.
 
-* upstream URL: `https://github.com/edwardkim/rhwp.git`
-* submodule 경로: `third_party/rhwp`
-* 기준 source, 버전과 커밋: `config/rhwp-upstream.json`이 단일 기준선(SSOT)
-* HOP 작업 브랜치: `main`
+* Upstream URL: `https://github.com/edwardkim/rhwp.git`
+* Submodule path: `third_party/rhwp`
+* Reference source, version, and commit: `config/rhwp-upstream.json` is the single source of truth (SSOT)
+* HOP working branch: `main`
 
-## 소유권 규칙
+## Ownership rules
 
-`third_party/rhwp` submodule은 vendor source로 취급한다. HOP 제품 동작을 구현하기 위해 이 폴더 아래 파일을 직접 수정하지 않는다.
+The `third_party/rhwp` submodule is treated as vendor source. Files under this folder are not edited directly to implement HOP product behavior.
 
-HOP가 소유하는 코드는 다음 위치에 둔다.
+Code HOP owns lives in:
 
-* `apps/desktop/`: Tauri 셸, native document session, 저장/내보내기/인쇄, 창 관리, 파일 연결, 패키징
-* `apps/studio-host/`: HOP studio host, Tauri bridge, desktop event routing, command override, 메뉴 추가, upstream에 패치하지 않을 UI 보정
-* `assets/`, `docs/`, `scripts/`, 릴리즈 메타데이터: 제품 수준 자산과 운영 코드
+* `apps/desktop/`: Tauri shell, native document session, save/export/print, window management, file associations, packaging
+* `apps/studio-host/`: HOP studio host, Tauri bridge, desktop event routing, command overrides, added menus, UI fixes that will not be patched upstream
+* `assets/`, `docs/`, `scripts/`, release metadata: product-level assets and operations code
 
-studio host는 Vite alias로 upstream `rhwp-studio`를 가져오고, HOP가 반드시 소유해야 하는 파일만 같은 import 경로로 shadowing한다. 이렇게 하면 upstream 업데이트의 기본 작업이 submodule pointer 갱신과 작은 호환성 조정으로 줄어든다.
+The studio host pulls in upstream `rhwp-studio` through Vite aliases and shadows, at the same import path, only the files HOP must own. This keeps the default work of an upstream update down to bumping the submodule pointer plus small compatibility adjustments.
 
-`config/rhwp-studio-overrides.json`은 모든 shadow alias의 검토 가능한 목록이다. 각 항목은 upstream
-구현을 감싸는 `extension`, 의도적으로 유지하는 `fork`, HOP 전용 `contribution` 중 하나로 분류하고
-존재 이유를 기록한다. 경계 테스트는 누락·중복과 사라진 upstream counterpart를 차단한다.
-manifest의 counterpart SHA-256 baseline은 extension/fork 대상 upstream 파일의 변경도 감지한다.
-업데이트 명령은 바뀐 counterpart 목록을 출력하므로 해당 adapter나 fork를 우선 리뷰한다.
-upstream CSS가 직접 참조하는 mirrored public asset도 같은 baseline과 검증 절차로 동기화한다.
+`config/rhwp-studio-overrides.json` is the reviewable list of every shadow alias. Each entry is classified as
+`extension` (wraps the upstream implementation), `fork` (intentionally kept), or `contribution` (HOP-only),
+with its reason recorded. Boundary tests block missing or duplicate entries and upstream counterparts that have disappeared.
+The manifest's counterpart SHA-256 baseline also detects changes to upstream files targeted by extensions/forks.
+The update command prints the list of changed counterparts, so review those adapters or forks first.
+Mirrored public assets referenced directly by upstream CSS are synced with the same baseline and verification procedure.
 
-제품 TypeScript는 `apps/studio-host/src/upstream` port를 통해서만 upstream API를 사용한다. 명령군은
-`apps/studio-host/src/host/command-runtime.ts`에서 typed contribution으로 조립한다. 로컬 글꼴의 브라우저
-동작은 upstream에 위임하고 Tauri 확장만 native 조회와 font bytes를 제공한다. desktop과 Quick Look의
-Rust 코드는 `apps/desktop/rhwp-adapter`에 의존하며 이 adapter만 `rhwp`를 직접 import한다.
+Product TypeScript uses upstream APIs only through the `apps/studio-host/src/upstream` port. Command groups
+are assembled as typed contributions in `apps/studio-host/src/host/command-runtime.ts`. Browser behavior for
+local fonts is delegated to upstream; the Tauri extension only provides native lookup and font bytes. Rust code for the
+desktop app and Quick Look depends on `apps/desktop/rhwp-adapter`, and only this adapter imports `rhwp` directly.
 
-## 통합 프로토콜
+## Integration protocols
 
-각 경계는 한 가지 정책만 소유하고 작은 typed API로 조합한다. upstream 구현을 복사하는 대신 아래
-프로토콜을 유지한다.
+Each boundary owns exactly one policy and is composed through a small typed API. Instead of copying upstream
+implementations, keep the protocols below.
 
-| 프로토콜 | upstream 소유 | HOP 소유 | 접점과 검증 |
+| Protocol | Upstream owns | HOP owns | Touch points and verification |
 | --- | --- | --- | --- |
-| 문서 파일/session | document bytes와 편집 command | native open/save/export/print, 충돌·미저장 guard | `TauriBridge`의 typed invoke와 Rust `rhwp-adapter`; desktop tests |
-| 편집 command | command 구현, snapshot/undo, `gotoPage`를 포함한 `CommandServices` | command 조립, WebView clipboard와 desktop shortcut | `host/command-runtime.ts`; command-runtime tests |
-| 렌더링 | `CanvasView`, `RendererSession`, page overlay와 ruler 위치 계산 | Canvas2D backend 선택과 host lifecycle 호출 | `host/renderer-session.ts`, `prepareDocumentLoad()` 뒤 `loadDocument()`; boundary tests |
-| 글꼴 | browser font discovery와 document font ID | 배포 가능한 font catalog, native font bytes, 제한 글꼴 authoring 정책 | 선택 가능한 catalog/UI 입력을 정규화하고 기존 document font lookup은 보존; font policy tests |
-| UI/dialog | 일반 dialog와 studio UI | desktop focus, 최근 문서, native print, 업데이트 UI | manifest의 명시적 extension/fork/contribution; counterpart hash tests |
-| WASM/Rust dependency | release source와 API | 불변 tag 선택, 생성 WASM/provenance, 두 native graph | updater와 `upstream:verify` |
+| Document file/session | document bytes and editing commands | native open/save/export/print, conflict and unsaved-change guards | typed invokes in `TauriBridge` and the Rust `rhwp-adapter`; desktop tests |
+| Editing commands | command implementations, snapshot/undo, `CommandServices` including `gotoPage` | command assembly, WebView clipboard and desktop shortcuts | `host/command-runtime.ts`; command-runtime tests |
+| Rendering | `CanvasView`, `RendererSession`, page overlay and ruler position math | Canvas2D backend choice and host lifecycle calls | `host/renderer-session.ts`, `loadDocument()` after `prepareDocumentLoad()`; boundary tests |
+| Fonts | browser font discovery and document font IDs | redistributable font catalog, native font bytes, restricted-font authoring policy | normalize selectable catalog/UI inputs while preserving existing document font lookups; font policy tests |
+| UI/dialogs | general dialogs and studio UI | desktop focus, recent documents, native print, update UI | explicit extension/fork/contribution in the manifest; counterpart hash tests |
+| WASM/Rust dependency | release source and API | immutable tag selection, generated WASM/provenance, both native graphs | the updater and `upstream:verify` |
 
-렌더러의 backend 선택처럼 제품 정책인 값은 작은 factory에서 한 번만 결정한다. document load처럼 순서가
-계약인 동작은 호출부에 명시한다. 파일과 프로세스 side effect는 bridge/native 경계 밖으로 새지 않게 한다.
-adapter는 데이터를 변환하거나 구현을 선택할 뿐 upstream 내부 상태를 재구현하지 않는다.
+Values that are product policy, such as the renderer backend choice, are decided once in a small factory. Behavior whose order
+is part of the contract, such as document load, is spelled out at the call site. File and process side effects must not leak outside the bridge/native boundary.
+Adapters only transform data or choose implementations; they do not reimplement upstream internal state.
 
-override는 다음 순서로 선택한다.
+Choose overrides in this order:
 
-1. upstream 공개 API를 그대로 사용한다.
-2. 제품 차이가 있으면 composition 또는 얇은 extension을 둔다.
-3. 독립적인 HOP 기능은 contribution으로 둔다.
-4. 공개 접점으로 표현할 수 없을 때만 fork하고 이유와 counterpart hash를 manifest에 기록한다.
+1. Use the upstream public API as is.
+2. If the product differs, use composition or a thin extension.
+3. Put independent HOP features in a contribution.
+4. Fork only when a public touch point cannot express it, and record the reason and counterpart hash in the manifest.
 
-업데이트 때 counterpart가 바뀌면 fork를 병합하는 것이 기본값이 아니다. 먼저 upstream이 기존 workaround를
-흡수했는지 확인하고, 흡수했다면 HOP 파일·alias·baseline·테스트를 함께 삭제한다. fork가 남아야 한다면
-제품 정책과 검증 책임을 다시 기록한다. upstream 동작을 자동으로 고치는 별도 repair path는 두지 않는다.
+When a counterpart changes during an update, merging the fork is not the default. First check whether upstream has absorbed the existing workaround;
+if it has, delete the HOP file, alias, baseline, and tests together. If the fork must remain,
+re-record the product policy and verification responsibility. There is no separate repair path that automatically fixes upstream behavior.
 
-HOP는 upstream `main.ts`를 그대로 실행하지 않으므로 browser/PWA file handling, embed runtime,
-upstream autosave/recovery, theme, optional CanvasKit host wiring 같은 full-host 기능은 자동으로 채택하지
-않는다. 이 기능들은 HOP native session·제품 정책과 충돌 여부를 별도로 검토한 뒤 도입한다. HOP bootstrap은
-upstream renderer/session과 command API를 조합하고 native 제품 경계만 추가한다. browser 전용 format-save와
-print-to-PDF command도 native session을 우회하므로 명시적으로 제외하며, HOP의 Save As와 PDF export가 파일
-형식 선택과 side effect를 소유한다.
+Because HOP does not run upstream `main.ts` as is, full-host features such as browser/PWA file handling, the embed runtime,
+upstream autosave/recovery, theming, and optional CanvasKit host wiring are not adopted automatically.
+These features are introduced only after a separate review of conflicts with HOP's native session and product policy. The HOP bootstrap
+composes the upstream renderer/session and command APIs and adds only the native product boundary. Browser-only format-save and
+print-to-PDF commands also bypass the native session, so they are explicitly excluded; HOP's Save As and PDF export own file
+format selection and side effects.
 
-현재 HOP가 소유하는 studio host override 범위는 다음과 같다.
+The studio host override scope HOP currently owns:
 
-* `core/bridge-factory`, `core/tauri-bridge`, `core/desktop-events`, `core/font-loader`, `core/local-fonts`: 데스크톱 런타임, 파일 이벤트, 로컬/벤더 폰트 정책
-* `command/commands/file`, `command/commands/edit`, `command/shortcut-map`: 데스크톱 파일·clipboard 명령과 HOP 단축키
-* `ui/dialog`, `ui/toolbar`, `ui/custom-select`, `ui/print-dialog`: HOP UI와 native 인쇄 정책
-* `host/renderer-session`: upstream renderer를 Canvas2D 제품 정책으로 조립
-* `styles/*`, `style.css`: HOP가 소유하는 스타일 override
-* `main.ts`: upstream이 더 작은 bootstrap hook을 제공하기 전까지 유지하는 앱 bootstrap override
-* `vendor/rhwp-core`, `vite-env.d.ts`: upstream release WASM import 경계를 맞추기 위한 generated WASM package와 타입 선언
+* `core/bridge-factory`, `core/tauri-bridge`, `core/desktop-events`, `core/font-loader`, `core/local-fonts`: desktop runtime, file events, local/vendor font policy
+* `command/commands/file`, `command/commands/edit`, `command/shortcut-map`: desktop file and clipboard commands and HOP shortcuts
+* `ui/dialog`, `ui/toolbar`, `ui/custom-select`, `ui/print-dialog`: HOP UI and native print policy
+* `host/renderer-session`: assembles the upstream renderer with the Canvas2D product policy
+* `styles/*`, `style.css`: style overrides HOP owns
+* `main.ts`: app bootstrap override kept until upstream offers a smaller bootstrap hook
+* `vendor/rhwp-core`, `vite-env.d.ts`: generated WASM package and type declarations that align the upstream release WASM import boundary
 
-## 업데이트 절차
+## Update procedure
 
-실제 업데이트 작업은 [`rhwp 업데이트 운영 매뉴얼`](../operations/RHWP_UPDATE.md)의 준비, diff 리뷰,
-검증, smoke test와 복구 체크리스트를 순서대로 따른다. 이 문서에는 경계의 핵심 원칙과 명령만 요약한다.
+For the actual update, follow the preparation, diff review, verification, smoke test, and recovery checklists in the
+[`rhwp update runbook`](../operations/RHWP_UPDATE.md) in order. This document only summarizes the boundary's core principles and commands.
 
-안정 release tag를 candidate로 준비하는 명령은 다음과 같다. branch나 `main`은 기본 업데이트
-대상이 될 수 없으며 tag를 반드시 명시한다.
+The command that prepares a stable release tag as a candidate is below. A branch or `main` cannot be the default update
+target; you must name a tag explicitly.
 
 ```sh
 pnpm upstream:update -- vX.Y.Z
 ```
 
-이 명령은 submodule checkout, vendored WASM, desktop과 Quick Look Cargo manifest/lockfile,
-`config/rhwp-upstream.json`, WASM provenance를 함께 정렬한다. candidate 생성 후에는 다음을 실행한다.
-실행 전 submodule `origin`이 기준선의 공식 source와 일치하고 보호 산출물이 clean인지 확인하며,
-WASM 재생성은 생략할 수 없다. Cargo patch는 HOP 제품 정책으로 유지하고, upstream이 같은 patch를 선언할
-때에만 그 고정 Git source/revision 또는 vendor path로 두 native graph를 함께 전환한다.
+This command aligns the submodule checkout, vendored WASM, the desktop and Quick Look Cargo manifests/lockfiles,
+`config/rhwp-upstream.json`, and WASM provenance together. After the candidate is created, run the commands below.
+Before running, it checks that the submodule `origin` matches the baseline's official source and that protected outputs are clean;
+WASM regeneration cannot be skipped. Cargo patches are kept as HOP product policy, and both native graphs are switched together to a pinned Git source/revision or vendor path
+only when upstream declares the same patch.
 
 ```sh
 pnpm upstream:verify
 pnpm test
 ```
 
-기존 shell entrypoint는 호환 목적으로만 남아 있으며 `UPSTREAM_REF`가 필수다.
+The old shell entry point remains only for compatibility and requires `UPSTREAM_REF`.
 
 ```sh
 UPSTREAM_REF=v0.7.19 scripts/update-upstream.sh
 ```
 
-업데이트 도구는 submodule release에서 WASM package를 임시 디렉터리에 생성한 뒤
-`apps/studio-host/vendor/rhwp-core`에 반영한다. 수동 복구가 필요할 때만 다음 명령을 사용한다.
+The update tool generates the WASM package from the submodule release in a temporary directory and then
+copies it into `apps/studio-host/vendor/rhwp-core`. Use the following command only when manual recovery is needed.
 
 ```sh
 (cd third_party/rhwp && wasm-pack build --target web --out-dir ../../apps/studio-host/vendor/rhwp-core --release)
 ```
 
-업데이트 후에는 다음을 확인한다.
+After an update, check:
 
-* submodule pointer diff
-* `apps/studio-host/vendor/rhwp-core`의 package/provenance/hash와 upstream lock 정합
-* desktop과 Quick Look Cargo.lock의 `rhwp` 버전 및 HOP-owned Cargo patch 정합
-* `apps/studio-host` override의 타입/import 깨짐
-* `apps/desktop/src-tauri`의 native Rust API 깨짐
-* HOP가 별도로 보정하던 UI/파일/인쇄/창 이벤트 동작
+* the submodule pointer diff
+* that the package/provenance/hash in `apps/studio-host/vendor/rhwp-core` matches the upstream lock
+* the `rhwp` version in the desktop and Quick Look Cargo.lock files and the HOP-owned Cargo patches
+* type/import breakage in `apps/studio-host` overrides
+* native Rust API breakage in `apps/desktop/src-tauri`
+* UI/file/print/window event behavior that HOP adjusts separately
 
-HOP에 필요한 동작을 upstream이 아직 노출하지 않는다면 먼저 HOP adapter에서 해결한다. 필요한 엔진 API나 버그 수정이 upstream에서 제때 소비될 수 없을 때만 forked upstream 의존성을 고려한다.
+If upstream does not yet expose behavior HOP needs, solve it in the HOP adapter first. Consider a forked upstream dependency only when a needed engine API or bug fix cannot be consumed from upstream in time.
 
-## 검증 기준
+## Verification criteria
 
-upstream 갱신은 최소한 다음 검증을 통과해야 한다.
+An upstream update must pass at least:
 
-* repo root에서 `pnpm install --frozen-lockfile`
-* repo root에서 `pnpm run build:studio`
-* `apps/desktop/src-tauri/`에서 `cargo test`
-* `apps/desktop/src-tauri/`에서 `cargo clippy -- -D warnings`
-* repo root에서 `pnpm --filter hop-desktop tauri build --debug --bundles app`
+* `pnpm install --frozen-lockfile` at the repo root
+* `pnpm run build:studio` at the repo root
+* `cargo test` in `apps/desktop/src-tauri/`
+* `cargo clippy -- -D warnings` in `apps/desktop/src-tauri/`
+* `pnpm --filter hop-desktop tauri build --debug --bundles app` at the repo root
 
-public beta 빌드는 여기에 더해 macOS와 Windows 또는 Linux 최소 1개 환경에서 HWP/HWPX 열기, 저장, PDF 내보내기, 인쇄, drag/drop, 다중 창 동작을 smoke test한다.
+A public beta build additionally smoke-tests opening, saving, PDF export, printing, drag/drop, and multiple windows with HWP/HWPX on macOS and at least one of Windows or Linux.

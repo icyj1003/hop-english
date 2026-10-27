@@ -1,24 +1,24 @@
-# HOP 데스크톱 배포 빌드
+# HOP desktop release builds
 
-Tauri 데스크톱 앱은 `apps/desktop/`에서 빌드한다. 배포용 GitHub Actions 워크플로는 `.github/workflows/hop-desktop.yml`이다.
+The Tauri desktop app is built in `apps/desktop/`. The release GitHub Actions workflow is `.github/workflows/hop-desktop.yml`.
 
-관련 문서:
+Related docs:
 
-* upstream 경계: [`docs/architecture/UPSTREAM.md`](../architecture/UPSTREAM.md)
+* Upstream boundary: [`docs/architecture/UPSTREAM.md`](../architecture/UPSTREAM.md)
 
-## 워크플로 동작
+## Workflow behavior
 
-`HOP Desktop Release`는 수동으로만 실행된다.
+`HOP Desktop Release` runs only manually.
 
-| 트리거 | 빌드 플랫폼 | 릴리즈 |
+| Trigger | Build platforms | Release |
 | --- | --- | --- |
-| 수동 `workflow_dispatch` | macOS arm64, macOS x64 기본 선택. Windows x64, Linux x64, Linux arm64는 필요할 때 선택 | 선택적으로 draft/prerelease 릴리즈 생성 |
+| Manual `workflow_dispatch` | macOS arm64 and macOS x64 selected by default. Windows x64, Linux x64, and Linux arm64 selected when needed | Optionally creates a draft/prerelease release |
 
-Pull Request와 태그 push는 자동 빌드를 실행하지 않는다. 릴리즈 빌드는 GitHub Actions에서 수동으로 실행하고, `build_ref`에 빌드할 branch, tag, commit SHA를 입력한다. `create_release`를 켠 상태에서 `build_ref`를 비워 두면 `release_tag`를 빌드 ref로 사용한다. HOP 데스크톱 릴리즈 태그는 `v*` 네임스페이스를 사용한다.
+Pull requests and tag pushes do not trigger automatic builds. Release builds are run manually in GitHub Actions, with the branch, tag, or commit SHA to build entered in `build_ref`. If `create_release` is on and `build_ref` is left empty, `release_tag` is used as the build ref. HOP desktop release tags use the `v*` namespace.
 
-빌드 대상은 다음과 같다.
+Build targets:
 
-| 플랫폼 | Runner | Target |
+| Platform | Runner | Target |
 | --- | --- | --- |
 | macOS arm64 | `macos-15` | `aarch64-apple-darwin` |
 | macOS x64 | `macos-15-intel` | `x86_64-apple-darwin` |
@@ -26,200 +26,200 @@ Pull Request와 태그 push는 자동 빌드를 실행하지 않는다. 릴리�
 | Linux x64 | `ubuntu-22.04` | `x86_64-unknown-linux-gnu` |
 | Linux arm64 | `ubuntu-22.04-arm` | `aarch64-unknown-linux-gnu` |
 
-각 빌드 잡은 Rust, Node, Linux Tauri 의존성을 준비하고, 루트 workspace lockfile 기준으로 Node 의존성을 설치한 뒤 `tauri-apps/tauri-action`으로 번들을 만든다. upstream `rhwp`는 `third_party/rhwp` submodule로 checkout된다.
+Each build job prepares Rust, Node, and the Linux Tauri dependencies, installs Node dependencies from the root workspace lockfile, and then builds the bundle with `tauri-apps/tauri-action`. Upstream `rhwp` is checked out as the `third_party/rhwp` submodule.
 
-Linux x64와 Linux arm64는 Ubuntu 22.04 ABI baseline을 명시적으로 유지한다. workflow는 Linux desktop binary와 AppImage 내부 ELF 파일에서 관찰되는 최대 `GLIBC_*` 심볼 요구 버전을 기록하고, `GLIBC_2.35`를 넘기면 실패한다. AppImage가 생성된 경우 같은 runner에서 `--appimage-extract` smoke를 실행해 22.04 기준에서 runtime이 실제로 시작되는지도 함께 확인한다. Linux arm64는 초기 지원 범위를 Debian/Ubuntu 계열 `.deb`로 둔다.
+Linux x64 and Linux arm64 explicitly keep an Ubuntu 22.04 ABI baseline. The workflow records the highest `GLIBC_*` symbol version required by the Linux desktop binary and the ELF files inside the AppImage, and fails if it exceeds `GLIBC_2.35`. When an AppImage is produced, it also runs an `--appimage-extract` smoke test on the same runner to confirm the runtime actually starts on the 22.04 baseline. Linux arm64 initially supports only the Debian/Ubuntu `.deb`.
 
-릴리즈 생성은 별도 잡에서만 수행한다. 일반 빌드 잡은 `contents: read` 권한만 갖고, GitHub Release를 만들거나 갱신하는 잡만 `contents: write` 권한을 갖는다. Apple, Tauri updater, Windows signing secret은 전체 workflow env에 올리지 않고 필요한 빌드 step에만 전달한다.
+Release creation happens only in a separate job. Regular build jobs have only `contents: read`; only the job that creates or updates the GitHub Release has `contents: write`. Apple, Tauri updater, and Windows signing secrets are not put in the workflow-wide env; they are passed only to the build steps that need them.
 
-홈페이지와 README는 GitHub의 latest-release direct download URL을 사용한다. 따라서 릴리즈 잡은 Tauri가 만든 원본 bundle 파일을 그대로 올리지 않고, 아래 고정 이름으로 복사한 asset을 GitHub Release에 업로드한다.
+The homepage and README use GitHub's latest-release direct download URLs. So the release job does not upload the original bundle files Tauri produces; it uploads copies under the fixed names below to the GitHub Release.
 
-| 플랫폼 | 릴리즈 asset | 직접 다운로드 URL |
+| Platform | Release asset | Direct download URL |
 | --- | --- | --- |
 | macOS Apple Silicon | `HOP-macos-arm64.dmg` | `/releases/latest/download/HOP-macos-arm64.dmg` |
 | macOS Intel | `HOP-macos-x64.dmg` | `/releases/latest/download/HOP-macos-x64.dmg` |
 | Windows x64 | `HOP-windows-x64.msi` | `/releases/latest/download/HOP-windows-x64.msi` |
-| Linux x64 Debian/Ubuntu 계열 | `HOP-linux-x64.deb` | `/releases/latest/download/HOP-linux-x64.deb` |
-| Linux x64 Fedora/openSUSE 계열 | `HOP-linux-x64.rpm` | `/releases/latest/download/HOP-linux-x64.rpm` |
+| Linux x64 Debian/Ubuntu | `HOP-linux-x64.deb` | `/releases/latest/download/HOP-linux-x64.deb` |
+| Linux x64 Fedora/openSUSE | `HOP-linux-x64.rpm` | `/releases/latest/download/HOP-linux-x64.rpm` |
 | Linux x64 portable | `HOP-linux-x64.AppImage` | `/releases/latest/download/HOP-linux-x64.AppImage` |
-| Linux arm64 Debian/Ubuntu 계열 | `HOP-linux-arm64.deb` | `/releases/latest/download/HOP-linux-arm64.deb` |
+| Linux arm64 Debian/Ubuntu | `HOP-linux-arm64.deb` | `/releases/latest/download/HOP-linux-arm64.deb` |
 
-현재 공개 다운로드는 macOS signed/notarized 빌드와 Windows MSI를 노출하고, Linux는 `.deb`를 기본 링크로 제공한다. Windows와 Linux는 workflow에서 선택해 빌드할 수 있고, 생성된 경우 고정 이름 asset으로 함께 업로드된다. `HOP-windows-x64.exe`, `HOP-linux-x64.AppImage`, `HOP-linux-x64.rpm`, `HOP-linux-arm64.deb`는 만들어진 경우 함께 올린다. `SHA256SUMS.txt`는 고정 이름으로 복사된 릴리즈 asset과 updater asset 기준으로 생성한다.
+Public downloads currently expose the signed/notarized macOS builds and the Windows MSI, with `.deb` as the default Linux link. Windows and Linux can be selected in the workflow, and when produced they are uploaded too as fixed-name assets. `HOP-windows-x64.exe`, `HOP-linux-x64.AppImage`, `HOP-linux-x64.rpm`, and `HOP-linux-arm64.deb` are uploaded when they are produced. `SHA256SUMS.txt` is generated from the fixed-name release assets and the updater assets.
 
-Linux 공개 안내에는 한글 IME 안정성을 위해 `.deb` 또는 `.rpm` 패키지를 우선 사용하라는 문구를 노출한다. Linux arm64는 Debian/Ubuntu 계열 `.deb`를 먼저 지원한다. AppImage는 portable 실행이 필요한 사용자를 위한 보조 배포물로 유지하며, 일부 Wayland/IME 환경에서는 한영 전환이 불안정할 수 있음을 함께 안내한다.
+The public Linux instructions recommend the `.deb` or `.rpm` package first for Korean IME stability. Linux arm64 supports the Debian/Ubuntu `.deb` first. AppImage is kept as a secondary download for users who need a portable build, with a note that Korean/English input switching can be unstable in some Wayland/IME environments.
 
-Arch 계열 배포판용 native 패키지는 아직 제공하지 않는다. `debtap` 같은 변환 도구로 `.deb`를 Arch 패키지로 바꾸는 방식은 사용자 workaround이며, 변환 과정에서 `gtk`처럼 잘못된 Arch 의존성이 생길 수 있다. 또한 변환 설치된 바이너리는 Tauri updater에서 여전히 deb bundle로 판단될 수 있으므로, 이후 앱 내 업데이트가 `.deb`와 `dpkg -i` 경로를 사용해 실패할 수 있다. 공개 안내에서는 이 변환 경로를 공식 설치 방법처럼 권장하지 않는다.
+Native packages for Arch-based distributions are not provided yet. Converting the `.deb` to an Arch package with a tool like `debtap` is a user workaround, and the conversion can produce wrong Arch dependencies such as `gtk`. Also, a binary installed this way may still be treated by the Tauri updater as a deb bundle, so later in-app updates may fail by using the `.deb` and `dpkg -i` path. The public instructions do not recommend this conversion path as an official install method.
 
-자동 업데이트는 GitHub Release의 `latest.json`을 사용한다.
+Auto-update uses `latest.json` on GitHub Releases.
 
 ```text
 https://github.com/golbin/hop/releases/latest/download/latest.json
 ```
 
-릴리즈 잡은 Tauri updater용 압축 bundle과 `.sig` 파일을 `HOP-updater-*` 또는 설치 파일 이름으로 함께 올리고, `latest.json` 안의 다운로드 URL은 해당 릴리즈 태그의 asset을 가리키게 만든다. manifest에는 `darwin-aarch64-app`, `windows-x86_64-msi`, `linux-x86_64-appimage`, `linux-aarch64-deb`처럼 Tauri가 먼저 찾는 installer-specific key와 fallback key를 함께 넣는다. Linux installer-specific key는 각 패키지 형식을 그대로 가리켜야 하며, generic `linux-x86_64`와 `linux-aarch64` fallback은 Linux 기본 다운로드 정책에 맞춰 `.deb`를 가리킨다. AppImage 설치본을 updater로 `.deb`에 자동 전환하는 흐름은 보장하지 않는다. 앱은 시작 시 이 manifest를 확인한다. 업데이트가 있으면 다운로드와 설치를 수행하고, Rust 쪽에서 아직 dirty 문서 세션이 없을 때만 재시작한다.
+The release job uploads the compressed bundles and `.sig` files for the Tauri updater as `HOP-updater-*` or under the installer file names, and makes the download URLs in `latest.json` point to that release tag's assets. The manifest includes both installer-specific keys Tauri looks up first, such as `darwin-aarch64-app`, `windows-x86_64-msi`, `linux-x86_64-appimage`, and `linux-aarch64-deb`, and fallback keys. Linux installer-specific keys must point to their own package format, and the generic `linux-x86_64` and `linux-aarch64` fallbacks point to `.deb` to match the default Linux download policy. Automatically switching an AppImage install to `.deb` through the updater is not guaranteed. The app checks this manifest at startup. If there is an update, it downloads and installs it, and restarts only when the Rust side has no dirty document sessions.
 
-수동 실행에서 `create_release`를 켜면 macOS arm64와 macOS x64를 모두 빌드해야 한다. README와 홈페이지가 두 macOS `.dmg`에 직접 링크하기 때문이다. macOS 공개 릴리즈가 unsigned로 나가는 일을 막기 위해, macOS release build는 Apple signing certificate와 notarization credential이 없으면 실패한다. 일부 플랫폼만 확인하고 싶을 때는 `create_release`를 끄고 artifact 빌드만 실행한다.
+If you turn on `create_release` in a manual run, both macOS arm64 and macOS x64 must be built, because the README and homepage link directly to both macOS `.dmg` files. To prevent a public macOS release from going out unsigned, the macOS release build fails without an Apple signing certificate and notarization credentials. To check only some platforms, turn off `create_release` and run an artifact-only build.
 
-## 수동 빌드
+## Manual builds
 
-GitHub Actions에서 `HOP Desktop Release`를 선택한 뒤 `Run workflow`를 실행한다.
+In GitHub Actions, select `HOP Desktop Release` and click `Run workflow`.
 
-플랫폼 체크박스로 필요한 OS만 빌드할 수 있다. artifact만 필요하면 `create_release`는 끈 상태로 둔다.
+Use the platform checkboxes to build only the OSes you need. If you only need artifacts, leave `create_release` off.
 
-수동 릴리즈를 만들 때는 다음처럼 실행한다.
+To make a manual release:
 
-1. 먼저 로컬에서 `v0.1.0` 같은 태그를 만들고 push한다.
-2. GitHub Actions에서 `HOP Desktop Release`를 선택한다.
-3. `create_release`를 켠다.
-4. `release_tag`에 `v0.1.0` 같은 태그를 입력한다.
-5. 필요하면 `build_ref`에도 같은 태그를 입력한다. 비워 두면 `release_tag`를 사용한다.
-6. macOS arm64, macOS x64 체크박스를 켠다.
-7. artifact를 확인하기 전까지는 `release_draft`를 켜 둔다.
-8. 베타/프리뷰 배포일 때만 `prerelease`를 켠다.
+1. Create and push a tag such as `v0.1.0` locally first.
+2. Select `HOP Desktop Release` in GitHub Actions.
+3. Turn on `create_release`.
+4. Enter a tag such as `v0.1.0` in `release_tag`.
+5. Optionally enter the same tag in `build_ref`. If left empty, `release_tag` is used.
+6. Check the macOS arm64 and macOS x64 boxes.
+7. Keep `release_draft` on until you have checked the artifacts.
+8. Turn on `prerelease` only for beta/preview releases.
 
-`create_release`를 켤 때 `release_tag`는 필수다. `build_ref`를 함께 입력했다면 `release_tag`와 같아야 하며, `release_tag`는 `vMAJOR.MINOR.PATCH` 형식이어야 한다. 이 제한은 릴리즈가 선택한 태그에서 빌드되도록 보장하기 위한 것이다.
+`release_tag` is required when `create_release` is on. If `build_ref` is also entered, it must equal `release_tag`, and `release_tag` must be in `vMAJOR.MINOR.PATCH` format. This restriction guarantees that the release is built from the chosen tag.
 
-`release_tag`는 `apps/desktop/src-tauri/tauri.conf.json`의 `version`과도 일치해야 한다. 예를 들어 앱 version이 `0.1.2`이면 릴리즈 태그는 `v0.1.2`여야 한다. 둘이 어긋나면 설치된 앱이 자기 자신을 계속 업데이트 대상으로 판단할 수 있으므로 워크플로가 실패한다.
+`release_tag` must also match `version` in `apps/desktop/src-tauri/tauri.conf.json`. For example, if the app version is `0.1.2`, the release tag must be `v0.1.2`. If they differ, the installed app can keep treating itself as needing an update, so the workflow fails.
 
-GitHub의 `releases/latest` endpoint는 draft 릴리즈를 제공하지 않고, prerelease도 안정 채널의 latest로 쓰기 어렵다. `prerelease=true` 빌드는 수동 테스트용 asset 배포로 보고, 자동 업데이트 안정 채널은 publish된 정식 릴리즈로 운영한다.
+GitHub's `releases/latest` endpoint does not serve draft releases, and a prerelease is hard to use as the stable channel's latest. Treat `prerelease=true` builds as asset distribution for manual testing, and run the stable auto-update channel from published full releases.
 
-## 태그 선택 릴리즈
+## Releasing from a tag
 
-정식 릴리즈는 태그를 push한 뒤, GitHub Actions에서 해당 태그를 선택해 만든다.
+A full release is made by pushing a tag and then selecting that tag in GitHub Actions.
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-태그를 push해도 자동 빌드는 실행되지 않는다. GitHub Actions에서 `create_release=true`, `release_tag=v0.1.0`으로 수동 실행한다. `build_ref`를 비워 두면 `release_tag`가 빌드 ref로 사용된다.
+Pushing a tag does not trigger an automatic build. Run the workflow manually in GitHub Actions with `create_release=true` and `release_tag=v0.1.0`. If `build_ref` is left empty, `release_tag` is used as the build ref.
 
-이 방식은 macOS arm64와 macOS x64를 빌드하고 draft GitHub Release를 만든다. artifact와 릴리즈 노트를 확인한 뒤 GitHub에서 draft를 publish한다. 같은 태그로 workflow를 다시 실행하면 기존 릴리즈 노트는 덮어쓰지 않고 artifact만 `--clobber`로 갱신한다.
+This builds macOS arm64 and macOS x64 and creates a draft GitHub Release. After checking the artifacts and release notes, publish the draft on GitHub. If you re-run the workflow with the same tag, the existing release notes are not overwritten; only the artifacts are refreshed with `--clobber`.
 
-## macOS 사이닝과 공증
+## macOS signing and notarization
 
-서명되지 않은 macOS 빌드는 내부 테스트에는 쓸 수 있지만, 공개 배포에는 서명과 공증을 적용해야 한다. Mac App Store 밖에서 배포할 앱은 `Developer ID Application` 인증서를 사용한다.
+Unsigned macOS builds can be used for internal testing, but public releases must be signed and notarized. Apps distributed outside the Mac App Store use a `Developer ID Application` certificate.
 
-공개 macOS 릴리즈를 만들기 전에 필요한 준비는 다음과 같다.
+Before making a public macOS release, you need to:
 
-1. 유료 Apple Developer Program 계정에 가입한다.
-2. Apple Developer에서 `Developer ID Application` 인증서를 만든다.
-3. 인증서를 private key와 함께 `.p12`로 export한다.
-4. App Store Connect에서 notarization용 API key를 만든다.
-5. 아래 GitHub repository secret을 등록한다.
-6. GitHub Actions에서 `HOP Desktop Release`를 수동 실행한다.
+1. Join the paid Apple Developer Program.
+2. Create a `Developer ID Application` certificate in Apple Developer.
+3. Export the certificate with its private key as a `.p12`.
+4. Create an API key for notarization in App Store Connect.
+5. Register the GitHub repository secrets below.
+6. Run `HOP Desktop Release` manually in GitHub Actions.
 
-수동 실행으로 바로 공개 릴리즈를 만들려면 `create_release`를 켜고, `release_draft`를 끈다. 먼저 artifact를 확인하고 싶으면 `release_draft`를 켜 둔 뒤 GitHub Releases 화면에서 직접 publish한다.
+To publish a release directly from a manual run, turn on `create_release` and turn off `release_draft`. If you want to check the artifacts first, keep `release_draft` on and publish from the GitHub Releases page yourself.
 
-GitHub repository secrets에 다음 값을 설정한다.
+Set these GitHub repository secrets:
 
-| Secret | 필수 여부 | 용도 |
+| Secret | Required | Purpose |
 | --- | --- | --- |
-| `APPLE_CERTIFICATE` | 사이닝 시 필수 | Base64 인코딩된 `.p12` 인증서 |
-| `APPLE_CERTIFICATE_PASSWORD` | 사이닝 시 필수 | `.p12` export 시 사용한 비밀번호 |
-| `KEYCHAIN_PASSWORD` | 권장 | CI 임시 keychain 비밀번호. 비워 두면 자동 생성 |
-| `APPLE_SIGNING_IDENTITY` | 선택 | 정확한 signing identity. 비워 두면 가져온 인증서 중 첫 번째 적합한 identity 사용 |
-| `APPLE_API_KEY` | API 공증 시 필수 | App Store Connect API key ID |
-| `APPLE_API_ISSUER` | API 공증 시 필수 | App Store Connect issuer ID |
-| `APPLE_API_KEY_P8_BASE64` | API 공증 시 필수 | Base64 인코딩된 `.p8` private key |
+| `APPLE_CERTIFICATE` | Required for signing | Base64-encoded `.p12` certificate |
+| `APPLE_CERTIFICATE_PASSWORD` | Required for signing | Password used when exporting the `.p12` |
+| `KEYCHAIN_PASSWORD` | Recommended | Password for the temporary CI keychain. Generated automatically if empty |
+| `APPLE_SIGNING_IDENTITY` | Optional | Exact signing identity. If empty, the first suitable identity among imported certificates is used |
+| `APPLE_API_KEY` | Required for API notarization | App Store Connect API key ID |
+| `APPLE_API_ISSUER` | Required for API notarization | App Store Connect issuer ID |
+| `APPLE_API_KEY_P8_BASE64` | Required for API notarization | Base64-encoded `.p8` private key |
 
-`APPLE_CERTIFICATE`는 export한 인증서에서 만든다.
+Create `APPLE_CERTIFICATE` from the exported certificate.
 
 ```bash
 openssl base64 -A -in /path/to/developer-id-application.p12 -out certificate-base64.txt
 ```
 
-`APPLE_API_KEY_P8_BASE64`는 App Store Connect API key에서 만든다.
+Create `APPLE_API_KEY_P8_BASE64` from the App Store Connect API key.
 
 ```bash
 openssl base64 -A -in /path/to/AuthKey_XXXXXXXXXX.p8 -out appstore-api-key-base64.txt
 ```
 
-권장 설정은 App Store Connect API key 방식이다. 이 경우 `APPLE_API_KEY`, `APPLE_API_ISSUER`, `APPLE_API_KEY_P8_BASE64` 세 값을 모두 설정한다. 셋 중 하나라도 빠지면 macOS release build는 실패한다.
+The App Store Connect API key method is recommended. In that case, set all three of `APPLE_API_KEY`, `APPLE_API_ISSUER`, and `APPLE_API_KEY_P8_BASE64`. If any of the three is missing, the macOS release build fails.
 
-Tauri는 Apple ID 기반 공증도 지원한다. 이 방식을 쓰려면 다음 secret을 설정한다.
+Tauri also supports Apple ID-based notarization. To use it, set these secrets:
 
-| Secret | 용도 |
+| Secret | Purpose |
 | --- | --- |
-| `APPLE_ID` | Apple 계정 이메일 |
-| `APPLE_PASSWORD` | 앱 암호 |
+| `APPLE_ID` | Apple account email |
+| `APPLE_PASSWORD` | App-specific password |
 | `APPLE_TEAM_ID` | Apple Developer Team ID |
 
-Apple 인증 정보는 `.env`에 저장하지 않는다. CI 사이닝 정보는 GitHub repository secret이나 environment secret으로만 관리한다.
+Do not store Apple credentials in `.env`. Manage CI signing information only as GitHub repository secrets or environment secrets.
 
-macOS release build는 다음 조건을 만족하지 않으면 실패한다.
+The macOS release build fails unless:
 
-* `APPLE_CERTIFICATE`가 설정되어 있어야 한다.
-* `APPLE_CERTIFICATE_PASSWORD`가 설정되어 있어야 한다.
-* App Store Connect API key 방식 또는 Apple ID 방식 중 하나의 notarization credential 묶음이 모두 설정되어 있어야 한다.
+* `APPLE_CERTIFICATE` is set.
+* `APPLE_CERTIFICATE_PASSWORD` is set.
+* a complete set of notarization credentials is set, using either the App Store Connect API key method or the Apple ID method.
 
-## Windows 사이닝
+## Windows signing
 
-### 서명 리스크와 계획
+### Signing risk and plan
 
-* Background: 홈페이지는 GitHub Release의 `HOP-windows-x64.msi`를 직접 다운로드 링크로 제공한다.
-* Problem: 서명되지 않은 새 `.msi`는 Edge/Windows SmartScreen에서 "일반적으로 다운로드되지 않습니다"로 차단되거나 실행 전 경고가 뜰 수 있다.
-* Goal: 공개 Windows 설치 파일의 다운로드 차단과 실행 경고를 줄인다.
-* Non-goals: 사용자 브라우저 보안 설정을 우회하거나, 검증되지 않은 설치 파일을 안전하다고 표시하지 않는다.
-* Constraints: 릴리즈 asset 이름은 README와 홈페이지 링크 때문에 안정적으로 유지해야 하며, 서명 secret은 GitHub repository secret 또는 environment secret에만 둔다.
-* Implementation outline: 단기적으로 홈페이지와 README에는 경고 원인과 `...` 메뉴의 유지 동작을 안내한다. 운영자와 고급 사용자를 위해 GitHub Releases에는 체크섬 확인 경로를 유지한다. 정식 공개 배포 전에는 Windows Authenticode 코드 사이닝을 추가하고, 가능하면 평판 확보에 유리한 인증서 또는 Trusted Signing 경로를 사용한다.
-* Verification plan: Windows에서 Edge 다운로드, 설치 파일 서명 상태, `SHA256SUMS.txt` 체크섬, GitHub Release asset 이름을 확인한다.
-* Rollback or recovery notes: 서명 설정이 실패하면 릴리즈를 draft 상태로 유지하고 unsigned Windows asset은 공개 링크에서 내리거나 릴리즈 노트에 명확히 표시한다.
+* Background: the homepage offers `HOP-windows-x64.msi` from GitHub Releases as a direct download link.
+* Problem: a new unsigned `.msi` can be blocked by Edge/Windows SmartScreen as "isn't commonly downloaded" or show a warning before running.
+* Goal: reduce download blocking and run warnings for the public Windows installer.
+* Non-goals: bypassing users' browser security settings, or labeling unverified installers as safe.
+* Constraints: release asset names must stay stable because of the README and homepage links, and signing secrets live only in GitHub repository or environment secrets.
+* Implementation outline: in the short term, the homepage and README explain the cause of the warning and the Keep action in the `...` menu. For operators and advanced users, GitHub Releases keeps a checksum verification path. Before a full public release, add Windows Authenticode code signing, preferably with a certificate or Trusted Signing path that helps build reputation.
+* Verification plan: on Windows, check the Edge download, the installer's signature status, the `SHA256SUMS.txt` checksum, and the GitHub Release asset names.
+* Rollback or recovery notes: if the signing setup fails, keep the release as a draft and either remove the unsigned Windows asset from the public links or mark it clearly in the release notes.
 
-서명되지 않은 Windows 빌드도 실행은 되지만, 공개 배포 파일은 Edge 다운로드 단계와 Windows 실행 단계에서 SmartScreen 경고가 뜰 수 있다. 공개 릴리즈에는 Windows 코드 사이닝 인증서를 붙이는 것이 좋다. 다운로드 단계의 "일반적으로 다운로드되지 않습니다" 경고는 파일이 반드시 악성이라는 뜻이 아니라, 서명/평판이 부족한 새 설치 파일에서 흔히 발생하는 평판 기반 경고다.
+Unsigned Windows builds still run, but public downloads can trigger SmartScreen warnings at the Edge download step and at the Windows run step. Attaching a Windows code signing certificate to public releases is recommended. The "isn't commonly downloaded" warning at download time does not mean the file is malicious; it is a reputation-based warning common for new installers without a signature or reputation.
 
-사용자에게 안내할 수 있는 임시 절차는 다음과 같다. 공개 페이지에서는 1-2단계 중심으로 안내하고, 체크섬 비교는 릴리즈 문서나 고급 사용자 안내에만 둔다.
+A temporary procedure you can give users is below. Public pages focus on steps 1-2; checksum comparison belongs only in release docs or advanced-user instructions.
 
-1. Edge 다운로드 목록에서 차단된 `HOP-windows-x64.msi`의 `...` 메뉴를 연다.
-2. `유지`를 선택한다.
-3. 추가 확인 화면이 나오면 게시자와 파일명을 확인한 뒤 유지한다.
-4. GitHub Releases의 `SHA256SUMS.txt`와 내려받은 파일의 체크섬을 비교한다.
+1. In the Edge downloads list, open the `...` menu for the blocked `HOP-windows-x64.msi`.
+2. Choose `Keep`.
+3. If an extra confirmation screen appears, check the publisher and file name, then keep it.
+4. Compare the downloaded file's checksum with `SHA256SUMS.txt` on GitHub Releases.
 
-이 절차는 임시 우회일 뿐이며, 공개 배포에서 경고를 줄이는 실질적인 방법은 Authenticode 서명이다.
+This procedure is only a temporary workaround; the real way to reduce warnings for public releases is Authenticode signing.
 
-실무 선택지는 다음 정도다.
+Practical options are roughly:
 
-| 선택지 | 비고 |
+| Option | Notes |
 | --- | --- |
-| EV 인증서 | SmartScreen reputation 확보에 유리. 대개 벤더별 도구 필요 |
-| Azure Trusted Signing | CI에서 `signtool` 또는 trusted-signing CLI와 함께 쓰기 좋음 |
-| Custom `signCommand` | 사용하는 인증서/벤더에 맞춰 `tauri.conf.json`의 `bundle.windows.signCommand`에 연결 |
+| EV certificate | Helps build SmartScreen reputation. Usually needs vendor-specific tooling |
+| Azure Trusted Signing | Works well in CI with `signtool` or the trusted-signing CLI |
+| Custom `signCommand` | Wire it to `bundle.windows.signCommand` in `tauri.conf.json` to fit your certificate/vendor |
 
-현재 워크플로는 Azure용 credential secret을 Tauri 빌드에 노출할 수 있게만 해 둔다. 실제 Windows artifact 서명은 `apps/desktop/src-tauri/tauri.conf.json`에 적절한 `bundle.windows.signCommand`를 추가해야 활성화된다.
+The current workflow only makes Azure credential secrets available to the Tauri build. Actual Windows artifact signing is enabled only after adding an appropriate `bundle.windows.signCommand` to `apps/desktop/src-tauri/tauri.conf.json`.
 
-Azure Trusted Signing을 쓴다면 보통 다음 secret이 필요하다.
+Azure Trusted Signing usually needs these secrets:
 
-| Secret | 용도 |
+| Secret | Purpose |
 | --- | --- |
 | `AZURE_CLIENT_ID` | Microsoft Entra application client ID |
 | `AZURE_CLIENT_SECRET` | Client secret |
 | `AZURE_TENANT_ID` | Tenant ID |
 
-사용하는 signing provider가 요구하는 account/profile secret은 `signCommand`와 함께 추가한다.
+Add whatever account/profile secrets your signing provider requires along with the `signCommand`.
 
-## Tauri updater 서명
+## Tauri updater signing
 
-데스크톱 앱은 GitHub Releases의 `latest.json`을 업데이트 endpoint로 사용한다. updater artifact 생성은 일반 수동/로컬 번들 빌드가 signing key를 요구하지 않도록 릴리즈 워크플로에서만 `createUpdaterArtifacts=true` config override로 켠다. 릴리즈 빌드에는 updater private key가 필요하다.
+The desktop app uses `latest.json` on GitHub Releases as its update endpoint. Updater artifact generation is turned on with a `createUpdaterArtifacts=true` config override only in the release workflow, so that ordinary manual/local bundle builds do not require a signing key. Release builds need the updater private key.
 
-1. keypair를 만든다.
+1. Create a keypair.
 
 ```bash
 pnpm --filter hop-desktop tauri signer generate -w ~/.tauri/hop.key
 ```
 
-현재 `tauri.conf.json`에 들어간 public key는 `~/.tauri/hop.key.pub`에서 나온 값이다. 같은 private key를 계속 사용해야 기존 설치본이 다음 업데이트를 신뢰할 수 있다.
+The public key currently in `tauri.conf.json` comes from `~/.tauri/hop.key.pub`. The same private key must keep being used so existing installs trust the next update.
 
-2. private key 내용을 GitHub repository secret `TAURI_SIGNING_PRIVATE_KEY`에 저장한다.
-3. private key 비밀번호를 설정했다면 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`에 저장한다. 비밀번호가 없는 key는 워크플로가 빈 password 환경 변수를 넣어 서명한다.
-4. GitHub Actions에서 `create_release=true`로 릴리즈를 빌드한다.
-5. 릴리즈 asset에 `latest.json`, `HOP-updater-*.sig`, `HOP-updater-*` 파일이 올라갔는지 확인한다.
+2. Store the private key contents in the GitHub repository secret `TAURI_SIGNING_PRIVATE_KEY`.
+3. If you set a password on the private key, store it in `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. For keys without a password, the workflow signs with an empty password environment variable.
+4. Build the release in GitHub Actions with `create_release=true`.
+5. Check that `latest.json`, `HOP-updater-*.sig`, and `HOP-updater-*` files were uploaded to the release assets.
 
-updater private key는 반드시 백업한다. 이 키를 잃으면 이미 배포된 앱에 신뢰 가능한 업데이트를 보낼 수 없다.
+Always back up the updater private key. If you lose it, you can no longer send trusted updates to apps already in the field.
 
-앱 시작 시 자동 업데이트는 debug 빌드에서는 실행하지 않는다. release 빌드에서만 updater endpoint를 확인한다.
+Auto-update at app startup does not run in debug builds. Only release builds check the updater endpoint.
 
-## 메모
+## Notes
 
-`../../loom`의 release workflow는 런타임 리소스 패키징, 엄격한 signing/updater 검증, 별도 release script까지 포함한다. HOP은 현재 그 정도 복잡도가 필요하지 않다.
+The release workflow in `../../loom` also covers runtime resource packaging, strict signing/updater verification, and a separate release script. HOP does not need that level of complexity right now.
 
-HOP 워크플로는 플랫폼 matrix를 명시적으로 유지하고, lockfile 기반으로 빌드하며, `tauri-action`은 artifact 생성에만 쓰고, GitHub Release 생성은 별도 write-permission job에서 처리한다.
+The HOP workflow keeps the platform matrix explicit, builds from lockfiles, uses `tauri-action` only to produce artifacts, and creates the GitHub Release in a separate job with write permission.

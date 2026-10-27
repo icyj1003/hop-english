@@ -41,16 +41,16 @@ The 0.4.0 source must be verified as a complete desktop application and released
 
 ## Release notes
 
-`rhwp` 0.7.19 통합과 향후 upstream 업데이트 안정성, 데스크톱 편집 회귀 수정을 중심으로 한 릴리즈입니다.
+This release focuses on integrating `rhwp` 0.7.19, making future upstream updates more stable, and fixing desktop editing regressions.
 
-### 변경 사항
+### Changes
 
-- 문서 엔진을 `rhwp` 0.7.19로 업데이트했습니다.
-- HOP 확장과 upstream 코드를 명확한 adapter/override 경계로 분리하고 업데이트 검증 도구와 운영 매뉴얼을 추가했습니다.
-- 파일·편집 메뉴가 클릭되지 않던 명령 연결 회귀를 수정했습니다.
-- 일반 텍스트와 표 셀의 시스템 복사·잘라내기 동작을 복구하고 실패 시 원문을 보호합니다.
-- 직접 인쇄 시 마지막에 빈 페이지가 추가될 수 있는 문제를 수정하고 다중 페이지 회귀 테스트를 보강했습니다.
-- 로컬 글꼴 탐색과 HOP 전용 글꼴 정책을 upstream 변경과 독립적으로 유지하도록 정리했습니다.
+- Updated the document engine to `rhwp` 0.7.19.
+- Separated HOP extensions from upstream code with a clear adapter/override boundary, and added update verification tooling and a runbook.
+- Fixed a command wiring regression that made the File and Edit menus unclickable.
+- Restored system copy/cut for plain text and table cells, and protected the original text when it fails.
+- Fixed an issue where direct printing could add a blank last page, and strengthened multi-page regression tests.
+- Reorganized local font discovery and HOP-specific font policy to stay independent of upstream changes.
 
 **Full Changelog**: https://github.com/golbin/hop/compare/v0.3.1...v0.4.0
 

@@ -39,15 +39,15 @@ The app needs a 0.3.0 release built by GitHub Actions as a draft so the artifact
 
 ## Draft release notes
 
-v0.2.0 이후 누적된 macOS 문서 미리보기, 플랫폼 릴리즈 범위, 문서 복구 UX 개선을 담은 릴리즈입니다.
+This release collects the macOS document preview, platform release scope, and document repair UX improvements made since v0.2.0.
 
-### 변경 사항
+### Changes
 
-- macOS Quick Look 미리보기/썸네일 확장을 앱 번들에 포함했습니다.
-- Linux arm64 릴리즈 빌드와 updater asset 구성을 추가했습니다.
-- HWP/HWPX validation repair 안내 흐름을 다듬고 HWP 문서에도 활성화했습니다.
-- upstream `rhwp` v0.7.13을 반영하고 studio-host 호환성을 맞췄습니다.
-- 수동 macOS notarized build와 릴리즈 워크플로 검증을 보강했습니다.
+- Included the macOS Quick Look preview/thumbnail extensions in the app bundle.
+- Added the Linux arm64 release build and updater assets.
+- Polished the HWP/HWPX validation repair prompt flow and enabled it for HWP documents too.
+- Adopted upstream `rhwp` v0.7.13 and aligned studio-host compatibility.
+- Strengthened the manual macOS notarized build and release workflow verification.
 
 **Full Changelog**: https://github.com/golbin/hop/compare/v0.2.0...v0.3.0
 

@@ -97,7 +97,7 @@ describe('desktop events', () => {
       payload: { paths: ['readme.txt'] },
     });
 
-    expect(setMessage).toHaveBeenCalledWith('HWP/HWPX 파일만 열 수 있습니다');
+    expect(setMessage).toHaveBeenCalledWith('Only HWP/HWPX files can be opened');
     expect(bridge.openDocumentByPath).not.toHaveBeenCalled();
   });
 
@@ -120,7 +120,7 @@ describe('desktop events', () => {
 
     await windowHandlers.get('tauri://drag-enter')?.({ payload: { paths: ['doc.HWPX'] } });
     expect(classList.toggle).toHaveBeenCalledWith('drag-over', true);
-    expect(setMessage).toHaveBeenCalledWith('HWP/HWPX 파일을 놓으면 문서를 엽니다');
+    expect(setMessage).toHaveBeenCalledWith('Drop an HWP/HWPX file to open it');
 
     await windowHandlers.get('tauri://drag-leave')?.({ payload: {} });
     await windowHandlers.get('tauri://drag-drop')?.({ payload: {} });
@@ -242,7 +242,7 @@ describe('desktop events', () => {
 
     expect(preventDefault).toHaveBeenCalled();
     expect(bridge.destroyCurrentWindow).not.toHaveBeenCalled();
-    expect(setMessage).toHaveBeenCalledWith('창 닫기 실패: Error: dialog failed');
+    expect(setMessage).toHaveBeenCalledWith('Failed to close window: Error: dialog failed');
   });
 
   it('delegates createDesktopDocument only when the bridge supports it', async () => {

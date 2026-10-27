@@ -64,11 +64,11 @@ pub fn collect_desktop_local_font_entries() -> Vec<LocalFontEntry> {
 
 pub fn read_desktop_local_font(path: &Path) -> Result<Vec<u8>, String> {
     let path = normalize_existing_path(path)
-        .ok_or_else(|| format!("로컬 폰트 파일을 찾을 수 없습니다: {}", path.display()))?;
+        .ok_or_else(|| format!("Cannot find local font file: {}", path.display()))?;
 
     if !has_supported_font_extension(&path) {
         return Err(format!(
-            "지원하지 않는 로컬 폰트 확장자입니다: {}",
+            "Unsupported local font extension: {}",
             path.display()
         ));
     }
@@ -79,14 +79,14 @@ pub fn read_desktop_local_font(path: &Path) -> Result<Vec<u8>, String> {
         .any(|root| path_is_within_root(&path, root))
     {
         return Err(format!(
-            "지원된 로컬 폰트 디렉터리 밖의 파일입니다: {}",
+            "File is outside the supported local font directories: {}",
             path.display()
         ));
     }
 
     fs::read(&path).map_err(|error| {
         format!(
-            "로컬 폰트 파일을 읽을 수 없습니다: {} ({})",
+            "Cannot read local font file: {} ({})",
             path.display(),
             error
         )

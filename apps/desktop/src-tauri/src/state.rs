@@ -116,7 +116,7 @@ impl DocumentSessionManager {
     pub fn create_document(&mut self) -> Result<DocumentOpenResult, String> {
         let mut core = DocumentCore::new_empty();
         core.create_blank_document_native()
-            .map_err(|e| format!("빈 문서 생성 실패: {}", e))?;
+            .map_err(|e| format!("Failed to create blank document: {}", e))?;
         let doc_id = Uuid::new_v4().to_string();
         let session = DocumentSession {
             doc_id: doc_id.clone(),
@@ -129,7 +129,7 @@ impl DocumentSessionManager {
             core: Some(core),
             page_svg_cache: HashMap::new(),
         };
-        let result = session.open_result("새 문서.hwp".to_string());
+        let result = session.open_result("Untitled.hwp".to_string());
         self.sessions.insert(doc_id.clone(), session);
         self.active_doc_id = Some(doc_id);
         Ok(result)
@@ -168,7 +168,7 @@ impl DocumentSessionManager {
     pub fn close_document(&mut self, doc_id: &str) -> Result<(), String> {
         self.sessions
             .remove(doc_id)
-            .ok_or_else(|| format!("문서 세션을 찾을 수 없습니다: {}", doc_id))?;
+            .ok_or_else(|| format!("Cannot find document session: {}", doc_id))?;
         if self.active_doc_id.as_deref() == Some(doc_id) {
             self.active_doc_id = self.sessions.keys().next().cloned();
         }
@@ -202,19 +202,19 @@ impl DocumentSessionManager {
         let format = DocumentFormat::from_path(&target_path)?;
         if format == DocumentFormat::Hwpx {
             return Err(
-                "HWPX 경로에는 HWP 바이트를 저장할 수 없습니다. .hwp 파일로 저장하세요."
+                "Cannot save HWP bytes to an HWPX path. Save as a .hwp file."
                     .to_string(),
             );
         }
         let bytes = std::fs::read(&staged_path).map_err(|e| {
             format!(
-                "staging 파일을 읽을 수 없습니다: {} ({})",
+                "Cannot read staging file: {} ({})",
                 staged_path.display(),
                 e
             )
         })?;
         let core =
-            editable_core_from_bytes(&bytes, "저장 바이트 검증 실패", "저장 문서 변환 실패")?;
+            editable_core_from_bytes(&bytes, "Failed to verify saved bytes", "Failed to convert document for saving")?;
         session.finish_hwp_save(target_path, &bytes, Some(core))?;
         let _ = std::fs::remove_file(&staged_path);
         Ok(session.save_result())
@@ -255,7 +255,7 @@ impl DocumentSessionManager {
         let svg = session
             .ensure_core_loaded()?
             .render_page_svg_native(page_index)
-            .map_err(|e| format!("페이지 렌더링 실패: {}", e))?;
+            .map_err(|e| format!("Failed to render page: {}", e))?;
         session
             .page_svg_cache
             .insert(page_index, (session.revision, svg.clone()));
@@ -333,7 +333,7 @@ impl DocumentSessionManager {
                     .get_paragraph_count_native(sec as usize)
                     .map_err(|e| e.to_string())?))
             }
-            _ => Err(format!("지원하지 않는 query입니다: {}", query)),
+            _ => Err(format!("Unsupported query: {}", query)),
         }
     }
 
@@ -397,7 +397,7 @@ impl DocumentSessionManager {
                         .map_err(|e| e.to_string())?,
                 )?)
             }
-            _ => return Err(format!("지원하지 않는 mutation입니다: {}", operation)),
+            _ => return Err(format!("Unsupported mutation: {}", operation)),
         };
         session.dirty = true;
         session.revision += 1;
@@ -416,13 +416,13 @@ impl DocumentSessionManager {
     pub fn session(&self, doc_id: &str) -> Result<&DocumentSession, String> {
         self.sessions
             .get(doc_id)
-            .ok_or_else(|| format!("문서 세션을 찾을 수 없습니다: {}", doc_id))
+            .ok_or_else(|| format!("Cannot find document session: {}", doc_id))
     }
 
     pub(crate) fn session_mut(&mut self, doc_id: &str) -> Result<&mut DocumentSession, String> {
         self.sessions
             .get_mut(doc_id)
-            .ok_or_else(|| format!("문서 세션을 찾을 수 없습니다: {}", doc_id))
+            .ok_or_else(|| format!("Cannot find document session: {}", doc_id))
     }
 }
 
@@ -448,12 +448,12 @@ impl DocumentSession {
             let source_path = self
                 .source_path
                 .as_ref()
-                .ok_or_else(|| "네이티브 문서 코어를 사용할 수 없습니다".to_string())?;
+                .ok_or_else(|| "Native document core is unavailable".to_string())?;
             let bytes = std::fs::read(source_path).map_err(|e| {
-                format!("문서를 읽을 수 없습니다: {} ({})", source_path.display(), e)
+                format!("Cannot read document: {} ({})", source_path.display(), e)
             })?;
             let core =
-                editable_core_from_bytes(&bytes, "문서 파싱 실패", "편집 가능 문서 변환 실패")?;
+                editable_core_from_bytes(&bytes, "Failed to parse document", "Failed to convert to editable document")?;
             self.page_count = core.page_count();
             self.core = Some(core);
         }
@@ -464,7 +464,7 @@ impl DocumentSession {
         if let Some(expected) = expected_revision {
             if expected != self.revision {
                 return Err(format!(
-                    "문서 revision이 변경되었습니다: expected {}, actual {}",
+                    "Document revision changed: expected {}, actual {}",
                     expected, self.revision
                 ));
             }
@@ -479,7 +479,7 @@ impl DocumentSession {
                 "EXTERNAL_MODIFICATION: {}",
                 status
                     .reason
-                    .unwrap_or_else(|| "파일이 외부에서 변경되었습니다".to_string())
+                    .unwrap_or_else(|| "File was changed externally".to_string())
             ));
         }
         Ok(())
@@ -521,12 +521,12 @@ impl DocumentSession {
                 return Ok(ExternalModificationStatus {
                     changed: true,
                     source_path: Some(source_path.to_string_lossy().to_string()),
-                    reason: Some("원본 파일이 삭제되었거나 이동되었습니다".to_string()),
+                    reason: Some("The original file was deleted or moved".to_string()),
                 });
             }
             Err(error) => {
                 return Err(format!(
-                    "원본 파일 상태를 확인할 수 없습니다: {} ({})",
+                    "Cannot check original file status: {} ({})",
                     source_path.display(),
                     error
                 ));
@@ -537,7 +537,7 @@ impl DocumentSession {
             return Ok(ExternalModificationStatus {
                 changed: true,
                 source_path: Some(source_path.to_string_lossy().to_string()),
-                reason: Some("원본 파일이 HOP 밖에서 변경되었습니다".to_string()),
+                reason: Some("The original file was changed outside HOP".to_string()),
             });
         }
 
@@ -553,7 +553,7 @@ impl DocumentSession {
             self.source_fingerprint =
                 Some(file_fingerprint_from_bytes(path, bytes).map_err(|e| {
                     format!(
-                        "저장 후 파일 상태를 확인할 수 없습니다: {} ({})",
+                        "Cannot check file status after saving: {} ({})",
                         path.display(),
                         e
                     )
@@ -611,7 +611,7 @@ impl DocumentFormat {
             "hwp" => Ok(Self::Hwp),
             "hwpx" => Ok(Self::Hwpx),
             _ => Err(format!(
-                "지원하지 않는 문서 확장자입니다: {}",
+                "Unsupported document extension: {}",
                 path.display()
             )),
         }
@@ -624,19 +624,19 @@ pub fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
         .filter(|p| !p.as_os_str().is_empty())
         .ok_or_else(|| {
             format!(
-                "저장 경로의 상위 디렉터리를 찾을 수 없습니다: {}",
+                "Cannot find parent directory of save path: {}",
                 path.display()
             )
         })?;
     let mut tmp = NamedTempFile::new_in(parent)
-        .map_err(|e| format!("임시 파일 생성 실패: {} ({})", parent.display(), e))?;
+        .map_err(|e| format!("Failed to create temporary file: {} ({})", parent.display(), e))?;
     tmp.write_all(bytes)
-        .map_err(|e| format!("임시 파일 쓰기 실패: {}", e))?;
+        .map_err(|e| format!("Failed to write temporary file: {}", e))?;
     tmp.as_file()
         .sync_all()
-        .map_err(|e| format!("임시 파일 flush 실패: {}", e))?;
+        .map_err(|e| format!("Failed to flush temporary file: {}", e))?;
     tmp.persist(path)
-        .map_err(|e| format!("파일 교체 실패: {} ({})", path.display(), e.error))?;
+        .map_err(|e| format!("Failed to replace file: {} ({})", path.display(), e.error))?;
     Ok(())
 }
 
@@ -721,26 +721,26 @@ pub(crate) fn editable_core_from_bytes(
 }
 
 pub fn parse_json_string(raw: String) -> Result<Value, String> {
-    serde_json::from_str(&raw).map_err(|e| format!("JSON 파싱 실패: {}", e))
+    serde_json::from_str(&raw).map_err(|e| format!("Failed to parse JSON: {}", e))
 }
 
 fn number_arg(args: &Value, key: &str) -> Result<u32, String> {
     args.get(key)
         .and_then(|v| v.as_u64())
         .map(|v| v as u32)
-        .ok_or_else(|| format!("숫자 인자가 필요합니다: {}", key))
+        .ok_or_else(|| format!("Integer argument required: {}", key))
 }
 
 fn float_arg(args: &Value, key: &str) -> Result<f64, String> {
     args.get(key)
         .and_then(|v| v.as_f64())
-        .ok_or_else(|| format!("실수 인자가 필요합니다: {}", key))
+        .ok_or_else(|| format!("Number argument required: {}", key))
 }
 
 fn string_arg<'a>(args: &'a Value, key: &str) -> Result<&'a str, String> {
     args.get(key)
         .and_then(|v| v.as_str())
-        .ok_or_else(|| format!("문자열 인자가 필요합니다: {}", key))
+        .ok_or_else(|| format!("String argument required: {}", key))
 }
 
 #[cfg(test)]
@@ -946,7 +946,7 @@ mod tests {
         assert!(status.changed);
         assert_eq!(
             status.reason,
-            Some("원본 파일이 삭제되었거나 이동되었습니다".to_string())
+            Some("The original file was deleted or moved".to_string())
         );
     }
 
@@ -964,7 +964,7 @@ mod tests {
             )
             .unwrap_err();
 
-        assert!(error.contains("문서 revision이 변경되었습니다"));
+        assert!(error.contains("Document revision changed"));
         assert_eq!(
             manager.session(&opened.doc_id).unwrap().revision,
             opened.revision
@@ -1033,7 +1033,7 @@ mod tests {
             )
             .unwrap_err();
 
-        assert!(error.contains("HWPX 경로에는 HWP 바이트를 저장할 수 없습니다"));
+        assert!(error.contains("Cannot save HWP bytes to an HWPX path"));
         assert!(staged_path.exists());
     }
 

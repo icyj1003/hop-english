@@ -24,14 +24,14 @@ export async function loadDocumentForOpen(
     } catch (error) {
       const message = String(error);
       if (message.includes('비밀번호가 일치하지 않거나 암호화 데이터가 손상되었습니다')) {
-        retryMessage = '암호가 일치하지 않거나 문서가 손상되었습니다. 다시 입력하세요.';
+        retryMessage = 'Incorrect password or the document is damaged. Please try again.';
         continue;
       }
       if (message.includes('지원하지 않는 암호화 방식')) {
-        throw new Error('지원하지 않는 암호화 방식의 문서입니다.');
+        throw new Error('This document uses an unsupported encryption method.');
       }
-      if (message.includes('DRM')) throw new Error('DRM으로 보호된 문서는 지원하지 않습니다.');
-      throw new Error('암호화된 문서를 열 수 없습니다. 문서가 손상되었는지 확인하세요.');
+      if (message.includes('DRM')) throw new Error('DRM-protected documents are not supported.');
+      throw new Error('Cannot open the encrypted document. Check whether it is damaged.');
     }
   }
 }

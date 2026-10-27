@@ -69,7 +69,7 @@ describe('chunked fs helpers', () => {
     fsOpenMock.mockResolvedValue(handle);
 
     await expect(writeFileInChunks('/tmp/staged.hwp', new Uint8Array([1]))).rejects.toThrow(
-      'staging 파일 쓰기 실패',
+      'Failed to write staging file',
     );
 
     expect(handle.close).toHaveBeenCalled();

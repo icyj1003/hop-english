@@ -104,7 +104,7 @@ describe('TauriBridge', () => {
     );
     expect(loaded).toEqual({
       docInfo: { pageCount: 2, fontsUsed: [] },
-      message: 'opened.hwp — 2페이지',
+      message: 'opened.hwp — 2 pages',
     });
     expect(document.title).toBe('opened.hwp - HOP');
     expect(bridge.hasUnsavedChanges()).toBe(false);
@@ -150,7 +150,7 @@ describe('TauriBridge', () => {
       () => bridge.exportPdfFromCommand(),
       () => bridge.printCurrentWebview(),
     ]) {
-      await expect(attempt()).rejects.toThrow('다른 문서 작업이 진행 중');
+      await expect(attempt()).rejects.toThrow('Another document operation is in progress');
     }
     expect(await bridge.confirmWindowClose()).toBe(false);
     expect(invokeMock).not.toHaveBeenCalledWith('close_document', expect.anything());
@@ -170,7 +170,7 @@ describe('TauriBridge', () => {
     saveMock.mockReturnValue(new Promise((resolve) => { cancel = resolve; }));
     const saving = bridge.saveDocumentAsFromCommand();
     await vi.waitFor(() => expect(saveMock).toHaveBeenCalled());
-    await expect(bridge.openDocumentByPath('/tmp/other.hwp')).rejects.toThrow('다른 문서 작업이 진행 중');
+    await expect(bridge.openDocumentByPath('/tmp/other.hwp')).rejects.toThrow('Another document operation is in progress');
     expect(invokeMock).not.toHaveBeenCalled();
     cancel(null);
     expect(await saving).toBeNull();
@@ -181,7 +181,7 @@ describe('TauriBridge', () => {
     applyOpenResult(bridge, nativeOpenResult({ dirty: true }));
     bridge.requiresPasswordForSave = true;
     saveMock.mockResolvedValue('/tmp/plain.hwp');
-    messageMock.mockResolvedValueOnce('저장').mockResolvedValueOnce(accept ? '암호 없이 저장' : '취소');
+    messageMock.mockResolvedValueOnce('Save').mockResolvedValueOnce(accept ? 'Save Without Password' : 'Cancel');
     fsOpenMock.mockResolvedValue(writeHandle());
     invokeMock.mockImplementation(async (command: string) => {
       if (command === 'check_external_modification') return { changed: false };
@@ -207,11 +207,11 @@ describe('TauriBridge', () => {
     const bridge = new TauriBridge();
     applyOpenResult(bridge, nativeOpenResult());
     bridge.requiresPasswordForSave = true;
-    await expect(bridge.saveDocumentFromCommand()).rejects.toThrow('암호 문서의 원본 저장');
+    await expect(bridge.saveDocumentFromCommand()).rejects.toThrow('Saving the original of a password-protected document');
     saveMock.mockResolvedValue('/tmp/plain.hwp');
-    messageMock.mockResolvedValue('취소');
+    messageMock.mockResolvedValue('Cancel');
     expect(await bridge.saveDocumentAsFromCommand()).toBeNull();
-    expect(messageMock).toHaveBeenCalledWith(expect.stringContaining('암호가 적용되지 않습니다'), expect.anything());
+    expect(messageMock).toHaveBeenCalledWith(expect.stringContaining('will not be password-protected'), expect.anything());
     expect(invokeMock).not.toHaveBeenCalled();
     expect(fsOpenMock).not.toHaveBeenCalled();
     expect(bridge.requiresPasswordForSave).toBe(true);
@@ -247,7 +247,7 @@ describe('TauriBridge', () => {
     fsOpenMock.mockResolvedValue(readHandle([1, 2, 3]));
 
     await expect(bridge.openDocumentByPath('/tmp/changing.hwp')).rejects.toThrow(
-      '파일을 읽는 중 변경되었습니다. 다시 시도하세요.',
+      'The file changed while being read. Please try again.',
     );
 
     expect(invokeMock).toHaveBeenCalledTimes(1);
@@ -313,9 +313,9 @@ describe('TauriBridge', () => {
 
     expect(openMock).toHaveBeenCalledWith({
       multiple: false,
-      filters: [{ name: 'HWP/HWPX 문서', extensions: ['hwp', 'hwpx'] }],
+      filters: [{ name: 'HWP/HWPX Documents', extensions: ['hwp', 'hwpx'] }],
     });
-    expect(loaded?.message).toBe('dialog.hwpx — 3페이지');
+    expect(loaded?.message).toBe('dialog.hwpx — 3 pages');
   });
 
   it('creates a new native document and releases it if wasm creation fails', async () => {
@@ -350,7 +350,7 @@ describe('TauriBridge', () => {
       if (command === 'create_document') {
         return nativeOpenResult({
           docId: 'new-hwp',
-          fileName: '새 문서.hwp',
+          fileName: 'Untitled.hwp',
           sourcePath: null,
           format: 'hwp',
         });
@@ -469,13 +469,13 @@ describe('TauriBridge', () => {
       warnings: [],
     });
 
-    await expect(bridge.saveDocumentFromCommand()).rejects.toThrow('HWPX 원본 저장은 아직 안전하게 지원하지 않습니다');
+    await expect(bridge.saveDocumentFromCommand()).rejects.toThrow('Saving HWPX files in place is not yet safely supported');
   });
 
   it.each([false, true])('saves HWP bytes through native state with encryption guard %s', async (encrypted) => {
     const bridge = new TauriBridge();
     bridge.requiresPasswordForSave = encrypted;
-    messageMock.mockResolvedValue('암호 없이 저장');
+    messageMock.mockResolvedValue('Save Without Password');
     const handle = writeHandle();
     fsOpenMock.mockResolvedValue(handle);
     applyOpenResult(bridge, {
@@ -613,7 +613,7 @@ describe('TauriBridge', () => {
       throw new Error(`unexpected command ${command}`);
     });
 
-    await expect(bridge.saveDocumentFromCommand()).rejects.toThrow('staging 파일 크기 검증 실패');
+    await expect(bridge.saveDocumentFromCommand()).rejects.toThrow('Staging file size check failed');
 
     expect(handle.close).toHaveBeenCalled();
     expect(invokeMock.mock.calls.some(([command]) => command === 'commit_staged_hwp_save')).toBe(false);
@@ -711,7 +711,7 @@ describe('TauriBridge', () => {
       sourcePath: '/tmp/source.hwp',
       reason: 'changed',
     });
-    messageMock.mockResolvedValue('저장 취소');
+    messageMock.mockResolvedValue('Save cancelled');
 
     const result = await bridge.saveDocumentFromCommand();
 
@@ -724,7 +724,7 @@ describe('TauriBridge', () => {
     const bridge = new TauriBridge();
     bridge.requiresPasswordForSave = encrypted;
     saveMock.mockResolvedValue('/tmp/source.hwp');
-    messageMock.mockResolvedValue('암호 없이 저장');
+    messageMock.mockResolvedValue('Save Without Password');
     const handle = writeHandle();
     fsOpenMock.mockResolvedValue(handle);
     applyOpenResult(bridge, {

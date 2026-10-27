@@ -34,14 +34,14 @@ export async function openPrintDialog(
     heightMm,
   });
   for (let i = 0; i < pageCount; i += 1) {
-    options.onStatus?.(`인쇄 준비 중... (${i + 1}/${pageCount})`);
+    options.onStatus?.(`Preparing to print... (${i + 1}/${pageCount})`);
     appendPrintPage(root, document.renderPageSvg(i));
     if ((i + 1) % 5 === 0 && i + 1 < pageCount) {
       await nextTask();
     }
   }
 
-  options.onStatus?.('인쇄 대화상자를 여는 중...');
+  options.onStatus?.('Opening print dialog...');
   await nextFrame();
 
   let cleaned = false;

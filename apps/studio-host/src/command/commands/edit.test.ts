@@ -7,10 +7,10 @@ const { prepareRhwpInternalClipboardHtml, writeTextHtmlToClipboard } = vi.hoiste
 
 vi.mock('@/upstream/commands', () => ({
   editCommands: [
-    { id: 'edit:cut', label: '오려 두기', execute: vi.fn() },
-    { id: 'edit:copy', label: '복사하기', execute: vi.fn() },
-    { id: 'edit:paste', label: '붙이기', execute: vi.fn() },
-    { id: 'edit:find', label: '찾기', execute: vi.fn() },
+    { id: 'edit:cut', label: 'Cut', execute: vi.fn() },
+    { id: 'edit:copy', label: 'Copy', execute: vi.fn() },
+    { id: 'edit:paste', label: 'Paste', execute: vi.fn() },
+    { id: 'edit:find', label: 'Find', execute: vi.fn() },
   ],
 }));
 
@@ -155,7 +155,7 @@ describe('edit command overrides', () => {
     await flushClipboardAction();
 
     expect(inputHandler.performDelete).not.toHaveBeenCalled();
-    expect(warning).toHaveBeenCalledWith('[edit:cut] 오려 두기 실패:', error);
+    expect(warning).toHaveBeenCalledWith('[edit:cut] Cut failed:', error);
   });
 
   it('does not delete a different selection after an asynchronous cut', async () => {
@@ -209,7 +209,7 @@ describe('edit command overrides', () => {
     } as never);
     await flushClipboardAction();
 
-    expect(warning).toHaveBeenCalledWith('[edit:paste] 붙이기 실패:', error);
+    expect(warning).toHaveBeenCalledWith('[edit:paste] Paste failed:', error);
   });
 
   it('keeps unrelated upstream edit commands available', () => {

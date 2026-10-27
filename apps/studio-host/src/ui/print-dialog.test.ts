@@ -162,9 +162,9 @@ describe('openPrintDialog', () => {
 
     await openPrintDialog(doc, { onStatus, print: printMock });
 
-    expect(onStatus).toHaveBeenCalledWith('인쇄 준비 중... (1/2)');
-    expect(onStatus).toHaveBeenCalledWith('인쇄 준비 중... (2/2)');
-    expect(onStatus).toHaveBeenCalledWith('인쇄 대화상자를 여는 중...');
+    expect(onStatus).toHaveBeenCalledWith('Preparing to print... (1/2)');
+    expect(onStatus).toHaveBeenCalledWith('Preparing to print... (2/2)');
+    expect(onStatus).toHaveBeenCalledWith('Opening print dialog...');
   });
 
   it('renders all pages via renderPageSvg', async () => {

@@ -55,14 +55,14 @@ export abstract class ModalDialog {
 
     const confirmBtn = document.createElement('button');
     confirmBtn.className = 'dialog-btn dialog-btn-primary';
-    confirmBtn.textContent = '확인';
+    confirmBtn.textContent = 'OK';
     confirmBtn.addEventListener('click', () => {
       void this.handleConfirm(confirmBtn);
     });
 
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'dialog-btn';
-    cancelBtn.textContent = '취소';
+    cancelBtn.textContent = 'Cancel';
     cancelBtn.addEventListener('click', () => this.hide());
 
     footer.appendChild(confirmBtn);
@@ -140,7 +140,7 @@ export abstract class ModalDialog {
       const shouldClose = await this.onConfirm();
       if (shouldClose !== false) this.hide();
     } catch (error) {
-      console.warn('[ModalDialog] 확인 처리 실패:', error);
+      console.warn('[ModalDialog] Confirm handler failed:', error);
     } finally {
       if (this.overlay?.isConnected) {
         confirmBtn.disabled = false;

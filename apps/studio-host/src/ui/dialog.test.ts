@@ -181,7 +181,7 @@ describe('ModalDialog', () => {
   });
 
   it('creates dialog with correct title', () => {
-    const dialog = new TestDialog('문서 설정', 500);
+    const dialog = new TestDialog('Document Settings', 500);
     dialog.show();
 
     const overlay = fakeDocument.body.children[0];
@@ -191,7 +191,7 @@ describe('ModalDialog', () => {
 
     const titleBar = wrap.children[0];
     expect(titleBar.className).toBe('dialog-title');
-    expect(titleBar.textContent).toContain('문서 설정');
+    expect(titleBar.textContent).toContain('Document Settings');
   });
 
   it('creates close button, body, and footer', () => {
@@ -216,11 +216,11 @@ describe('ModalDialog', () => {
     expect(footer.children.length).toBe(2);
 
     const confirmBtn = footer.children[0];
-    expect(confirmBtn.textContent).toBe('확인');
+    expect(confirmBtn.textContent).toBe('OK');
     expect(confirmBtn.classList.contains('dialog-btn-primary')).toBe(true);
 
     const cancelBtn = footer.children[1];
-    expect(cancelBtn.textContent).toBe('취소');
+    expect(cancelBtn.textContent).toBe('Cancel');
   });
 
   it('removes overlay on hide', () => {

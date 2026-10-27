@@ -131,7 +131,7 @@ pub fn run() {
             }
 
             if let Err(error) = app_quit::handle_run_event(app, &event) {
-                eprintln!("[quit] 앱 종료 흐름 처리 실패: {}", error);
+                eprintln!("[quit] Failed to handle app quit: {}", error);
             }
         }
     });
@@ -158,7 +158,7 @@ fn queue_open_paths(app: &AppHandle, paths: Vec<String>) {
 fn open_paths_in_new_windows(app: &AppHandle, paths: Vec<String>) {
     for path in paths {
         if let Err(error) = open_path_in_new_window(app, path) {
-            eprintln!("[open] 새 창 파일 열기 준비 실패: {}", error);
+            eprintln!("[open] Failed to prepare file open in new window: {}", error);
         }
     }
 }

@@ -1,25 +1,26 @@
-# HOP 문서
+# HOP docs
 
-이 디렉터리는 HOP의 개발, 아키텍처 결정, 운영 문서를 둔다.
+This directory holds HOP's development, architecture decision, and operations documents.
 
-## 구성
+## Layout
 
 ```text
 docs/
-  DEVELOPMENT.md             로컬 개발 환경과 주요 명령
-  KEYBOARD_SHORTCUTS.md      키보드 단축키 레퍼런스
+  DEVELOPMENT.md             local development environment and main commands
+  KEYBOARD_SHORTCUTS.md      keyboard shortcut reference
   architecture/
-    UPSTREAM.md              upstream rhwp 경계와 업데이트 방식
+    UPSTREAM.md              upstream rhwp boundary and update approach
+    LOCAL_FONTS.md           local font resolution rules
   operations/
-    DESKTOP_RELEASE.md       데스크톱 릴리즈와 서명/공증 메모
-    RHWP_UPDATE.md           rhwp 업데이트 실행 체크리스트와 복구 절차
+    DESKTOP_RELEASE.md       desktop release and signing/notarization notes
+    RHWP_UPDATE.md           rhwp update checklist and recovery procedure
 ```
 
-## 작성 규칙
+## Writing rules
 
-* 새 기능 스펙이 필요하면 `docs/specs/<topic>/` 아래에 둔다.
-* 작업용 계획 문서나 구현 상태 추적 문서는 구현이 끝나면 커밋 후 삭제한다. 완료 기록은 git history를 기준으로 확인한다.
-* 로컬 개발 환경과 명령은 `docs/DEVELOPMENT.md`에 둔다.
-* 여러 스펙에 걸쳐 적용되는 아키텍처 결정은 `docs/architecture/`에 둔다.
-* 빌드, 배포, 서명, 유지보수 절차는 `docs/operations/`에 둔다.
-* HOP 제품 동작을 `third_party/rhwp`의 변경으로 문서화하지 않는다. HOP가 소유하는 동작은 `apps/desktop` 또는 `apps/studio-host`에 있어야 한다.
+* Put new feature specs under `docs/specs/<topic>/`.
+* Working plans and implementation-status tracking docs are committed and then deleted once the implementation is done. Use git history as the record of completed work.
+* Local development environment and commands go in `docs/DEVELOPMENT.md`.
+* Architecture decisions that span several specs go in `docs/architecture/`.
+* Build, release, signing, and maintenance procedures go in `docs/operations/`.
+* Do not document HOP product behavior as changes to `third_party/rhwp`. Behavior HOP owns must live in `apps/desktop` or `apps/studio-host`.
