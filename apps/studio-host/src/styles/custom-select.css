@@ -163,6 +163,8 @@
 
 #style-bar .custom-select[data-select-id="font-name"] {
   width: 180px;
+  /* rhwp's .sb-font sets overflow: hidden, which clips the open menu. */
+  overflow: visible;
 }
 
 #style-bar .custom-select[data-select-id="linespacing-select"] {
